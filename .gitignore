@@ -1,8 +1,9 @@
 datasets/*
 experiments/*
 results/*
-notebooks/*
+notebooks/*.ipynb
 tb_logger/*
+flagged/*
 wandb/*
 tmp/*
 
@@ -138,3 +139,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+notebooks/dataset_and_network.ipynb
+notebooks/dataset_and_network.ipynb
+notebooks/dataset_and_network.ipynb
