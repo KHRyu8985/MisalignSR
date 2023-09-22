@@ -1,9 +1,10 @@
-gradio # python to simple web app
-scikit-learn # machine learning
 albumentations # image augmentation
-voila # jupyter notebook to web app
+gradio # python to simple web app
+icecream # printing tool
+ipyfilechooser # file chooser widget (voila)
 ipykernel # jupyter
 ipympl # matplotlib in jupyterlab
-ipyfilechooser # file chooser widget (voila)
+pre-commit # install pre-commit tool
 pyrootutils # root directory finding
-icecream # printing tool
+scikit-learn # machine learning
+voila # jupyter notebook to web app

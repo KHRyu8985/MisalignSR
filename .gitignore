@@ -1,6 +1,7 @@
 datasets/*
 experiments/*
 results/*
+notebooks/*
 tb_logger/*
 wandb/*
 tmp/*
@@ -14,6 +15,7 @@ __pycache__/
 
 # C extensions
 *.so
+*.ipynb
 
 # Distribution / packaging
 .Python

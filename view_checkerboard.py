@@ -1,4 +1,3 @@
-import gradio
 import gradio as gr
 from gradio import Interface
 from gradio.components import Image as grImage, Dropdown, Slider, Checkbox, Radio
@@ -19,7 +18,7 @@ def checkerboard_image_gr(img1, img2, square_size=70, show_grid=True):
     img2 = resize_image(img2, 700)
 
     # Initialize a blank image for the checkerboard pattern
-    result = Image.new("RGB", img1.size)
+    result = Image.new('RGB', img1.size)
 
     # Iterate over the image in steps of square size
     for i in range(0, img1.width, square_size):
@@ -35,9 +34,9 @@ def checkerboard_image_gr(img1, img2, square_size=70, show_grid=True):
     if show_grid:
         draw = ImageDraw.Draw(result)
         for i in range(0, result.width, square_size):
-            draw.line([(i, 0), (i, result.height)], fill="white", width=1)
+            draw.line([(i, 0), (i, result.height)], fill='white', width=1)
         for i in range(0, result.height, square_size):
-            draw.line([(0, i), (result.width, i)], fill="white", width=1)
+            draw.line([(0, i), (result.width, i)], fill='white', width=1)
 
     return result
 
@@ -51,12 +50,12 @@ def gr_interface(img1, img2, square_size=70, show_grid=True):
 Interface(
     fn=gr_interface,
     inputs=[
-        grImage(type="pil", label="LR image"),
-        grImage(type="pil", label="HR image"),
-        Slider(10, 700, label="Square Size", step=10, default=100),
-        Checkbox(label="Show Grid")
+        grImage(type='pil', label='LR image'),
+        grImage(type='pil', label='HR image'),
+        Slider(10, 700, label='Square Size', step=10, default=100),
+        Checkbox(label='Show Grid'),
     ],
-    outputs=grImage(type="pil"),
-    css=".output_image img { width: 100%; height: auto; }",
-    live=True
+    outputs=grImage(type='pil'),
+    css='.output_image img { width: 100%; height: auto; }',
+    live=True,
 ).launch()

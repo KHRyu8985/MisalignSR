@@ -1,29 +1,4 @@
 repos:
-  # flake8
-  - repo: https://github.com/PyCQA/flake8
-    rev: 3.8.3
-    hooks:
-      - id: flake8
-        args: ["--config=setup.cfg", "--ignore=W504, W503"]
-
-  # modify known_third_party
-  - repo: https://github.com/asottile/seed-isort-config
-    rev: v2.2.0
-    hooks:
-      - id: seed-isort-config
-
-  # isort
-  - repo: https://github.com/timothycrosley/isort
-    rev: 5.2.2
-    hooks:
-      - id: isort
-
-  # yapf
-  - repo: https://github.com/pre-commit/mirrors-yapf
-    rev: v0.30.0
-    hooks:
-      - id: yapf
-
   # pre-commit-hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
