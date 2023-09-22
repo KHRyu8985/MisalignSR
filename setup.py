@@ -6,7 +6,7 @@ import os
 import subprocess
 import time
 
-version_file = 'basicsrexamples/version.py'
+version_file = 'misalignSR/version.py'
 
 
 def readme():
@@ -82,15 +82,15 @@ def get_requirements(filename='requirements.txt'):
 if __name__ == '__main__':
     write_version_py()
     setup(
-        name='basicsrexamples',
+        name='misalignSR',
         version=get_version(),
-        description='BasicSR Examples',
+        description='misaligned super-resolution',
         long_description=readme(),
         long_description_content_type='text/markdown',
-        author='Xintao Wang',
-        author_email='xintao.wang@outlook.com',
+        author='Kanghyun Ryu',
+        author_email='khryu@kist.re.kr',
         keywords='computer vision, pytorch, basicsr, image restoration, super-resolution',
-        url='https://github.com/xinntao/BasicSR-examples',
+        url='https://github.com/KHRyu8985/MisalignSR',
         include_package_data=True,
         packages=find_packages(exclude=('options', 'datasets', 'experiments', 'results', 'tb_logger', 'wandb')),
         classifiers=[

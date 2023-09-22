@@ -1,5 +1,30 @@
 # :rocket: BasicSR Examples
 
+
+# Installation guide
+
+## 1. Make a conda environment
+``` bash
+conda create -n misalignsr python==3.9
+conda activate misalignsr
+```
+
+## 2. local clone basicsr in a separate directory and install:
+``` bash
+git clone https://github.com/XPixelGroup/BasicSR.git
+cd BasicSR
+pip install -r requirements.txt
+python setup.py develop
+```
+
+## 3. Go to local directory (MisalignSR) and install additional stuff
+```bash
+pip install -e .
+```
+
+## 3. Download DIV2K for synthetic
+
+
 [![download](https://img.shields.io/github/downloads/xinntao/BasicSR-examples/total.svg)](https://github.com/xinntao/BasicSR-examples/releases)
 [![Open issue](https://img.shields.io/github/issues/xinntao/BasicSR-examples)](https://github.com/xinntao/BasicSR-examples/issues)
 [![Closed issue](https://img.shields.io/github/issues-closed/xinntao/BasicSR-examples)](https://github.com/xinntao/BasicSR-examples/issues)

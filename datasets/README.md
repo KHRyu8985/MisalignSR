@@ -1,25 +1,24 @@
-# Datasets
+# Data preparation
 
-This folder is mainly for storing datasets used for training/validation/testing.
+## Viewing the images
+To view the pair of aligned and misaligned image, use `view_curtain.py` or `view_checkerboard.py` which will generate gradio app
+Using the app, user can use image curtain or checkerboard to visualize the misalignment of two images.
 
-## Practice
+Click Flag to save the interesting image pairs!
+## DIV2K
 
-1. Separate your codes and datasets. So it is better to soft link your dataset (such as DIV2K, FFHQ, *etc*) here.
-    ```bash
-    ln -s DATASET_PATH ./
-    ```
-
-## Example Datasets
-
-We provide two example datasets for demo.
-
-1. [BSDS100](https://github.com/xinntao/BasicSR-examples/releases/download/0.0.0/BSDS100.zip) for training
-1. [Set5](https://github.com/xinntao/BasicSR-examples/releases/download/0.0.0/Set5.zip) for validation
-
-You can easily download them by running the following command in the BasicSR-examples root path:
+Extract subimage from original DIV2K dataset. This will generate `DIV2K_train_HR_sub` and `DIV2K_valid_LR_sub`. <br>
+The code is modified from https://github.com/XPixelGroup/BasicSR/blob/master/scripts/data_preparation/extract_subimages.py <br>
+This will generate misaligned dataset also
 
 ```bash
-python scripts/prepare_example_data.py
+python scripts/data/synthetic/extract_subimage.py
 ```
 
-The example datasets are now in the `datasets/example` folder.
+For viewing the generated dataset, use `voila` interactive app
+
+```bash
+voila --no-browser view_dataset.ipynb
+```
+
+## Training

@@ -11,7 +11,7 @@ from basicsr.utils.registry import DATASET_REGISTRY
 
 
 @DATASET_REGISTRY.register()
-class ExampleDataset(data.Dataset):
+class SynthDataset(data.Dataset):
     """Example dataset.
 
     1. Read GT image

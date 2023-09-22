@@ -1,6 +1,9 @@
-basicsr
-numpy
-opencv-python
-requests
-torch
-torchvision
+gradio # python to simple web app
+scikit-learn # machine learning
+albumentations # image augmentation
+voila # jupyter notebook to web app
+ipykernel # jupyter
+ipympl # matplotlib in jupyterlab
+ipyfilechooser # file chooser widget (voila)
+pyrootutils # root directory finding
+icecream # printing tool

@@ -76,7 +76,7 @@ train:
 # validation settings
 val:
   val_freq: !!float 5e3
-  save_img: false
+  save_img: True
 
   metrics:
     psnr: # metric name, can be arbitrary
@@ -91,7 +91,7 @@ val:
 logger:
   print_freq: 100
   save_checkpoint_freq: !!float 5e3
-  use_tb_logger: true
+  use_tb_logger: True
   wandb:
     project: ~
     resume_id: ~
