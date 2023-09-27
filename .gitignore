@@ -1,7 +1,9 @@
 datasets/*
 experiments/*
 results/*
+notebooks/*.ipynb
 tb_logger/*
+flagged/*
 wandb/*
 tmp/*
 
@@ -14,6 +16,7 @@ __pycache__/
 
 # C extensions
 *.so
+*.ipynb
 
 # Distribution / packaging
 .Python
@@ -136,3 +139,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+<<<<<<< HEAD
+=======
+notebooks/dataset_and_network.ipynb
+notebooks/dataset_and_network.ipynb
+notebooks/dataset_and_network.ipynb
+>>>>>>> installation

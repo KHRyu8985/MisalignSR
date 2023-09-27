@@ -1,65 +1,44 @@
-# :rocket: BasicSR Examples
+# Introduction to MisalignSR
 
-[![download](https://img.shields.io/github/downloads/xinntao/BasicSR-examples/total.svg)](https://github.com/xinntao/BasicSR-examples/releases)
-[![Open issue](https://img.shields.io/github/issues/xinntao/BasicSR-examples)](https://github.com/xinntao/BasicSR-examples/issues)
-[![Closed issue](https://img.shields.io/github/issues-closed/xinntao/BasicSR-examples)](https://github.com/xinntao/BasicSR-examples/issues)
-[![LICENSE](https://img.shields.io/github/license/xinntao/basicsr-examples.svg)](https://github.com/xinntao/BasicSR-examples/blob/master/LICENSE)
-[![python lint](https://github.com/xinntao/BasicSR/actions/workflows/pylint.yml/badge.svg)](https://github.com/xinntao/BasicSR/blob/master/.github/workflows/pylint.yml)
+# A. Get started
 
-[English](README.md) **|** [简体中文](README_CN.md) <br>
-[`BasicSR repo`](https://github.com/xinntao/BasicSR) **|** [`simple mode example`](https://github.com/xinntao/BasicSR-examples/tree/master) **|** [`installation mode example`](https://github.com/xinntao/BasicSR-examples/tree/installation)
-
-In this repository, we give examples to illustrate **how to easily use** [`BasicSR`](https://github.com/xinntao/BasicSR) in **your own project**.
-
-:triangular_flag_on_post: **Projects that use BasicSR**
-- :white_check_mark: [**GFPGAN**](https://github.com/TencentARC/GFPGAN): A practical algorithm for real-world face restoration
-- :white_check_mark: [**Real-ESRGAN**](https://github.com/xinntao/Real-ESRGAN): A practical algorithm for general image restoration
-
-If you use `BasicSR` in your open-source projects, welcome to contact me (by [email](#e-mail-contact) or opening an issue/pull request). I will add your projects to the above list :blush:
-
----
-
-If this repo is helpful, please help to :star: this repo or recommend it to your friends. Thanks:blush: <br>
-Other recommended projects:<br>
-:arrow_forward: [facexlib](https://github.com/xinntao/facexlib): A collection that provides useful face-relation functions.<br>
-:arrow_forward: [HandyView](https://github.com/xinntao/HandyView): A PyQt5-based image viewer that is handy for view and comparison.
-
----
-
-## Contents
-
-- [HowTO use BasicSR](#HowTO-use-BasicSR)
-- [As s Template](#As-a-Template)
-
-## HowTO use BasicSR
-
-`BasicSR` can be used in two ways:
-- :arrow_right: Git clone the entire BasicSR. In this way, you can see the complete codes of BasicSR, and then modify them according to your own needs.
-- :arrow_right: Use basicsr as a [python package](https://pypi.org/project/basicsr/#history) (that is, install with pip). It provides the training framework, procedures, and some basic functions. You can easily build your own projects based on basicsr.
-    ```bash
-    pip install basicsr
-    ```
-
-Our example mainly focuses on the second one, that is, how to easily and concisely build your own project based on the basicsr package.
-
-There are two ways to use the python package of basicsr, which are provided in two branches:
-
-- :arrow_right: [simple mode](https://github.com/xinntao/BasicSR-examples/tree/master): the project can be run **without installation**. But it has limitations: it is inconvenient to import complex hierarchical relationships; It is not easy to access the functions in this project from other locations
-
-- :arrow_right: [installation mode](https://github.com/xinntao/BasicSR-examples/tree/installation): you need to install the project by running `python setup.py develop`. After installation, it is more convenient to import and use.
-
-As a simple introduction and explanation, we use the example of *simple mode*, but we recommend the *installation mode* in practical use.
-
-```bash
-git clone https://github.com/xinntao/BasicSR-examples.git
-cd BasicSR-examples
+## 1. Make a conda environment
+Python=3.9 버젼을 사용해서 conda environment 생성
+``` bash
+conda create -n misalignsr python==3.9
+conda activate misalignsr
 ```
 
-### Preliminary
+## 2. local clone basicsr in a separate directory and install:
+local clone 하는 이유, pip install 시 몇개 함수가 버젼이 안 맞음...
+``` bash
+git clone https://github.com/XPixelGroup/BasicSR.git
+cd BasicSR
+pip install -r requirements.txt
+python setup.py develop
+```
+
+## 3. Go to local directory (MisalignSR) and install additional stuff
+requirement.txt 파일안에 설치 파일들 있음.
+```bash
+pip install -e .
+```
+
+## 4. Additional
+precommit library 설치를 해주면 됨 -> git commit 시 training-white line 같은 간단한 에러 보정해줌.
+```bash
+pre-commit install
+```
+
+
+
+# B. Preliminaries about basicSR library
+
+basicSR 라이브러리에 대한 간단한 설명임...
 
 Most deep-learning projects can be divided into the following parts:
 
-1. **data**: defines the training/validation data that is fed into the model training
+1. **data**: defines the training/validation data that is fed into,,,,, the model training
 2. **arch** (architecture): defines the network structure and the forward steps
 3. **model**: defines the necessary components in training (such as loss) and a complete training process (including forward propagation, back-propagation, gradient optimization, *etc*.), as well as other functions, such as validation, *etc*
 4. Training pipeline: defines the training process, that is, connect the data-loader, model, validation, saving checkpoints, *etc*
@@ -70,6 +49,7 @@ Therefore, we have BasicSR, which separates many shared functions. With BasicSR,
 
 In order to further facilitate the use of BasicSR, we provide the basicsr package. You can easily install it through `pip install basicsr`. After that, you can use the training process of BasicSR and the functions already developed in BasicSR~
 
+<<<<<<< HEAD
 ### A Simple Example
 
 Let's use a simple example to illustrate how to use BasicSR to build your own project.
@@ -279,3 +259,28 @@ The simple mode do not require many modifications. Those using the installation 
 ## :e-mail: Contact
 
 If you have any questions or want to add your project to the list, please email `xintao.wang@outlook.com` or `xintaowang@tencent.com`.
+=======
+# C. Preparing dataset
+
+## Viewing the images
+To view the pair of aligned and misaligned image, use `view_curtain.py` or `view_checkerboard.py` which will generate gradio app
+Using the app, user can use image curtain or checkerboard to visualize the misalignment of two images.
+
+Click Flag to save the interesting image pairs!
+
+For viewing the DIV2K dataset, use `voila` interactive app to view lq and gt pairs
+
+```bash
+voila --no-browser view_dataset.ipynb
+```
+
+## DIV2K
+
+Extract subimage from original DIV2K dataset. This will generate `DIV2K_train_HR_sub` and `DIV2K_valid_LR_sub`. <br>
+The code is modified from https://github.com/XPixelGroup/BasicSR/blob/master/scripts/data_preparation/extract_subimages.py <br>
+This will generate misaligned dataset also
+
+```bash
+python scripts/data/synthetic/extract_subimage.py
+```
+>>>>>>> installation

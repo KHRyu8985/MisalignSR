@@ -1,6 +1,11 @@
-basicsr
-numpy
-opencv-python
-requests
-torch
-torchvision
+albumentations # image augmentation
+gradio # python to simple web app
+higher # pytorch library for meta-learning
+icecream # printing tool
+ipyfilechooser # file chooser widget (voila)
+ipykernel # jupyter
+ipympl # matplotlib in jupyterlab
+pre-commit # install pre-commit tool
+pyrootutils # root directory finding
+scikit-learn # machine learning
+voila # jupyter notebook to web app
