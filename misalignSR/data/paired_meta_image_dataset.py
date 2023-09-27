@@ -60,11 +60,12 @@ class PairedMetaImageDataset(data.Dataset):
         img_bytes = self.file_client.get(lq_path, 'lq')
         img_lq = imfrombytes(img_bytes, float32=True)
 
-        meta_gt_path = self.meta_paths[index]['meta_gt_path']  # added meta path
+        meta_index = index % len(self.meta_paths)
+        meta_gt_path = self.meta_paths[meta_index]['meta_gt_path']  # added meta path
         img_bytes = self.file_client.get(meta_gt_path, 'meta_gt')
         meta_img_gt = imfrombytes(img_bytes, float32=True)
 
-        meta_lq_path = self.meta_paths[index]['meta_lq_path']  # added meta path
+        meta_lq_path = self.meta_paths[meta_index]['meta_lq_path']  # added meta path
         img_bytes = self.file_client.get(meta_lq_path, 'meta_lq')
         meta_img_lq = imfrombytes(img_bytes, float32=True)
 

@@ -4,8 +4,8 @@ import numpy as np
 import lpips
 import torch
 
-from alignformer.metrics.metric_util import reorder_image
-from alignformer.utils import img2tensor
+from misalignSR.metrics.metric_util import reorder_image
+from misalignSR.utils import img2tensor
 
 
 def calculate_lpips(img1,
