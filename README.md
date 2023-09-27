@@ -38,7 +38,7 @@ basicSR 라이브러리에 대한 간단한 설명임...
 
 Most deep-learning projects can be divided into the following parts:
 
-1. **data**: defines the training/validation data that is fed into the model training
+1. **data**: defines the training/validation data that is fed into,,,,, the model training
 2. **arch** (architecture): defines the network structure and the forward steps
 3. **model**: defines the necessary components in training (such as loss) and a complete training process (including forward propagation, back-propagation, gradient optimization, *etc*.), as well as other functions, such as validation, *etc*
 4. Training pipeline: defines the training process, that is, connect the data-loader, model, validation, saving checkpoints, *etc*

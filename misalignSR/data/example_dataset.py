@@ -4,7 +4,7 @@ import torch
 from torch.utils import data as data
 from torchvision.transforms.functional import normalize
 
-from basicsr.data.degradations import add_jpg_compression
+from misalignSR.data.degradations import add_jpg_compression
 from basicsr.data.transforms import augment, mod_crop, paired_random_crop
 from basicsr.utils import FileClient, imfrombytes, img2tensor, scandir
 from basicsr.utils.registry import DATASET_REGISTRY

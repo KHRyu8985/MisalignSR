@@ -44,47 +44,23 @@ def main():
     opt['compression_level'] = 3
 
     # HR images
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_HR'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_HR_sub'
-    opt['crop_size'] = 480
-    opt['step'] = 240
-    opt['thresh_size'] = 0
-    opt['shift_level'] = 0
-    extract_subimages(opt)
-
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_HR'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_HR_sub_misaligned'
-    opt['crop_size'] = 480
-    opt['step'] = 240
-    opt['thresh_size'] = 0
-    opt['shift_level'] = 1.5  # 1.5% misalignment
+    opt['input_folder'] = 'datasets/DIV2K/DIV2K_valid_HR'
+    opt['save_folder'] = 'datasets/DIV2K/DIV2K_valid_HR_sub'
     extract_subimages(opt)
 
     # LRx2 images
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X2'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X2_sub'
-    opt['crop_size'] = 240
-    opt['step'] = 120
-    opt['thresh_size'] = 0
-    opt['shift_level'] = 0
+    opt['input_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X2'
+    opt['save_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X2_sub'
     extract_subimages(opt)
 
     # LRx3 images
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X3'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X3_sub'
-    opt['crop_size'] = 160
-    opt['step'] = 80
-    opt['thresh_size'] = 0
-    opt['shift_level'] = 0
+    opt['input_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X3'
+    opt['save_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X3_sub'
     extract_subimages(opt)
 
     # LRx4 images
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X4'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X4_sub'
-    opt['crop_size'] = 120
-    opt['step'] = 60
-    opt['thresh_size'] = 0
-    opt['shift_level'] = 0
+    opt['input_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X4'
+    opt['save_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X4_sub'
     extract_subimages(opt)
 
 
@@ -133,9 +109,7 @@ def worker(path, opt):
     Returns:
         process_info (str): Process information displayed in progress bar.
     """
-    crop_size = opt['crop_size']
-    step = opt['step']
-    thresh_size = opt['thresh_size']
+
     img_name, extension = osp.splitext(osp.basename(path))
 
     # remove the x2, x3, x4 and x8 in the filename for DIV2K
@@ -145,42 +119,9 @@ def worker(path, opt):
 
     img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
 
-    h, w = img.shape[0:2]
-    h_space = np.arange(0, h - crop_size + 1, step)
-    if h - (h_space[-1] + crop_size) > thresh_size:
-        h_space = np.append(h_space, h - crop_size)
-    w_space = np.arange(0, w - crop_size + 1, step)
-    if w - (w_space[-1] + crop_size) > thresh_size:
-        w_space = np.append(w_space, w - crop_size)
-
-    index = 0
-
-    if opt['shift_level'] > 0:
-        shift_expr = int(
-            crop_size * opt['shift_level'] / 200
-        )  # 1% of crop size (0.5% random)
-        x_shift = np.random.randint(-shift_expr, shift_expr)
-        y_shift = np.random.randint(-shift_expr, shift_expr)
-
-    else:
-        x_shift = 0
-        y_shift = 0
-
-    for x in h_space:
-        for y in w_space:
-            index += 1
-
-            if (x + x_shift) > 0 and (x+ x_shift) + crop_size < h:
-                x += x_shift
-            if (y + y_shift) > 0 and (y+ y_shift) + crop_size < w:
-                y += y_shift
-
-            cropped_img = img[x : x + crop_size, y : y + crop_size, ...]
-            cropped_img = np.ascontiguousarray(cropped_img)
-
-            cv2.imwrite(
-                osp.join(opt['save_folder'], f'{img_name}_s{index:03d}{extension}'), cropped_img,
-                [cv2.IMWRITE_PNG_COMPRESSION, opt['compression_level']])
+    cv2.imwrite(
+        osp.join(opt['save_folder'], f'{img_name}{extension}'), img,
+        [cv2.IMWRITE_PNG_COMPRESSION, opt['compression_level']])
 
     process_info = f'Processing {img_name} ...'
     return process_info
