@@ -18,59 +18,59 @@ class PairedMetaImageDataset(data.Dataset):
         self.opt = opt
         # file client (io backend)
         self.file_client = None
-        self.io_backend_opt = opt["io_backend"]
-        self.mean = opt["mean"] if "mean" in opt else None
-        self.std = opt["std"] if "std" in opt else None
+        self.io_backend_opt = opt['io_backend']
+        self.mean = opt['mean'] if 'mean' in opt else None
+        self.std = opt['std'] if 'std' in opt else None
 
-        self.gt_folder, self.lq_folder = opt["dataroot_gt"], opt["dataroot_lq"]
+        self.gt_folder, self.lq_folder = opt['dataroot_gt'], opt['dataroot_lq']
         self.meta_gt_folder, self.meta_lq_folder = (
-            opt["dataroot_meta_gt"],
-            opt["dataroot_meta_lq"],
+            opt['dataroot_meta_gt'],
+            opt['dataroot_meta_lq'],
         )  # added meta folders
 
-        if "filename_tmpl" in opt:
-            self.filename_tmpl = opt["filename_tmpl"]
+        if 'filename_tmpl' in opt:
+            self.filename_tmpl = opt['filename_tmpl']
         else:
-            self.filename_tmpl = "{}"
+            self.filename_tmpl = '{}'
 
         self.paths = paired_paths_from_folder(
-            [self.lq_folder, self.gt_folder], ["lq", "gt"], self.filename_tmpl
+            [self.lq_folder, self.gt_folder], ['lq', 'gt'], self.filename_tmpl
         )
 
         self.meta_paths = paired_paths_from_folder(
             [self.meta_lq_folder, self.meta_gt_folder],
-            ["meta_lq", "meta_gt"],
+            ['meta_lq', 'meta_gt'],
             self.filename_tmpl,
         )  # added meta paths
 
     def __getitem__(self, index):
         if self.file_client is None:
             self.file_client = FileClient(
-                self.io_backend_opt.pop("type"), **self.io_backend_opt
+                self.io_backend_opt.pop('type'), **self.io_backend_opt
             )
 
-        scale = self.opt["scale"]
+        scale = self.opt['scale']
 
         # Load gt and lq images. Dimension order: HWC; channel order: BGR;
         # image range: [0, 1], float32.
-        gt_path = self.paths[index]["gt_path"]
-        img_bytes = self.file_client.get(gt_path, "gt")
+        gt_path = self.paths[index]['gt_path']
+        img_bytes = self.file_client.get(gt_path, 'gt')
         img_gt = imfrombytes(img_bytes, float32=True)
-        lq_path = self.paths[index]["lq_path"]
-        img_bytes = self.file_client.get(lq_path, "lq")
+        lq_path = self.paths[index]['lq_path']
+        img_bytes = self.file_client.get(lq_path, 'lq')
         img_lq = imfrombytes(img_bytes, float32=True)
 
-        meta_gt_path = self.meta_paths[index]["meta_gt_path"]  # added meta path
-        img_bytes = self.file_client.get(meta_gt_path, "meta_gt")
+        meta_gt_path = self.meta_paths[index]['meta_gt_path']  # added meta path
+        img_bytes = self.file_client.get(meta_gt_path, 'meta_gt')
         meta_img_gt = imfrombytes(img_bytes, float32=True)
 
-        meta_lq_path = self.meta_paths[index]["meta_lq_path"]  # added meta path
-        img_bytes = self.file_client.get(meta_lq_path, "meta_lq")
+        meta_lq_path = self.meta_paths[index]['meta_lq_path']  # added meta path
+        img_bytes = self.file_client.get(meta_lq_path, 'meta_lq')
         meta_img_lq = imfrombytes(img_bytes, float32=True)
 
         # augmentation for training
-        if self.opt["phase"] == "train":
-            gt_size = self.opt["gt_size"]
+        if self.opt['phase'] == 'train':
+            gt_size = self.opt['gt_size']
             # random crop
             img_gt, img_lq = paired_random_crop(img_gt, img_lq, gt_size, scale, gt_path)
             meta_img_gt, meta_img_lq = paired_random_crop(
@@ -79,15 +79,15 @@ class PairedMetaImageDataset(data.Dataset):
 
             # flip, rotation
             img_gt, img_lq = augment(
-                [img_gt, img_lq], self.opt["use_hflip"], self.opt["use_rot"]
+                [img_gt, img_lq], self.opt['use_hflip'], self.opt['use_rot']
             )
 
             meta_img_gt, meta_img_lq = augment(
-                [meta_img_gt, meta_img_lq], self.opt["use_hflip"], self.opt["use_rot"]
+                [meta_img_gt, meta_img_lq], self.opt['use_hflip'], self.opt['use_rot']
             )
 
         # color space transform
-        if "color" in self.opt and self.opt["color"] == "y":
+        if 'color' in self.opt and self.opt['color'] == 'y':
             img_gt = bgr2ycbcr(img_gt, y_only=True)[..., None]
             img_lq = bgr2ycbcr(img_lq, y_only=True)[..., None]
             meta_img_gt = bgr2ycbcr(meta_img_gt, y_only=True)[..., None]
@@ -95,7 +95,7 @@ class PairedMetaImageDataset(data.Dataset):
 
         # crop the unmatched GT images during validation or testing, especially for SR benchmark datasets
         # TODO: It is better to update the datasets, rather than force to crop
-        if self.opt["phase"] != "train":
+        if self.opt['phase'] != 'train':
             img_gt = img_gt[0 : img_lq.shape[0] * scale, 0 : img_lq.shape[1] * scale, :]
             meta_img_gt = meta_img_gt[
                 0 : meta_img_lq.shape[0] * scale, 0 : meta_img_lq.shape[1] * scale, :
@@ -116,12 +116,12 @@ class PairedMetaImageDataset(data.Dataset):
             normalize(meta_img_gt, self.mean, self.std, inplace=True)
 
         return {
-            "lq": img_lq,
-            "gt": img_gt,
-            "meta_lq": meta_img_lq,
-            "meta_gt": meta_img_gt,
-            "lq_path": lq_path,
-            "gt_path": gt_path,
+            'lq': img_lq,
+            'gt': img_gt,
+            'meta_lq': meta_img_lq,
+            'meta_gt': meta_img_gt,
+            'lq_path': lq_path,
+            'gt_path': gt_path,
         }
 
     def __len__(self):

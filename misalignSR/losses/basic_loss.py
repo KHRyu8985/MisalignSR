@@ -13,17 +13,17 @@ from misalignSR.archs.arch_util import flow_warp
 from basicsr.utils.registry import LOSS_REGISTRY
 from .loss_util import weighted_loss
 
-_reduction_modes = ["none", "mean", "sum"]
+_reduction_modes = ['none', 'mean', 'sum']
 
 
 @weighted_loss
 def l1_loss(pred, target):
-    return F.l1_loss(pred, target, reduction="none")
+    return F.l1_loss(pred, target, reduction='none')
 
 
 @weighted_loss
 def mse_loss(pred, target):
-    return F.mse_loss(pred, target, reduction="none")
+    return F.mse_loss(pred, target, reduction='none')
 
 
 @weighted_loss
@@ -47,12 +47,12 @@ class L1Loss(nn.Module):
             Supported choices are 'none' | 'mean' | 'sum'. Default: 'mean'.
     """
 
-    def __init__(self, loss_weight=1.0, reduction="mean"):
+    def __init__(self, loss_weight=1.0, reduction='mean'):
         super(L1Loss, self).__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
 
         self.loss_weight = loss_weight
@@ -81,12 +81,12 @@ class ModifiedMSELoss(nn.Module):
             Supported choices are 'none' | 'mean' | 'sum'. Default: 'mean'.
     """
 
-    def __init__(self, loss_weight=1.0, reduction="mean"):
+    def __init__(self, loss_weight=1.0, reduction='mean'):
         super(ModifiedMSELoss, self).__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
 
         self.loss_weight = loss_weight
@@ -107,7 +107,7 @@ class ModifiedMSELoss(nn.Module):
 
 @LOSS_REGISTRY.register()
 class GradientLoss(nn.Module):
-    def __init__(self, loss_weight=1.0, reduction="mean"):
+    def __init__(self, loss_weight=1.0, reduction='mean'):
         super(GradientLoss, self).__init__()
         self.loss_weight = loss_weight
         self.reduction = reduction
@@ -166,7 +166,7 @@ class GradientLoss(nn.Module):
 
 @LOSS_REGISTRY.register()
 class SpatialLoss(nn.Module):
-    def __init__(self, loss_weight=1.0, reduction="mean"):
+    def __init__(self, loss_weight=1.0, reduction='mean'):
         super(SpatialLoss, self).__init__()
         self.loss_weight = loss_weight
         self.reduction = reduction
@@ -236,12 +236,12 @@ class MSELoss(nn.Module):
             Supported choices are 'none' | 'mean' | 'sum'. Default: 'mean'.
     """
 
-    def __init__(self, loss_weight=1.0, reduction="mean"):
+    def __init__(self, loss_weight=1.0, reduction='mean'):
         super(MSELoss, self).__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
 
         self.loss_weight = loss_weight
@@ -275,12 +275,12 @@ class CharbonnierLoss(nn.Module):
             Default: 1e-12.
     """
 
-    def __init__(self, loss_weight=1.0, reduction="mean", eps=1e-12):
+    def __init__(self, loss_weight=1.0, reduction='mean', eps=1e-12):
         super(CharbonnierLoss, self).__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
 
         self.loss_weight = loss_weight
@@ -356,12 +356,12 @@ class PerceptualLoss(nn.Module):
     def __init__(
         self,
         layer_weights,
-        vgg_type="vgg19",
+        vgg_type='vgg19',
         use_input_norm=True,
         range_norm=False,
         perceptual_weight=1.0,
         style_weight=0.0,
-        criterion="l1",
+        criterion='l1',
     ):
         super(PerceptualLoss, self).__init__()
         self.perceptual_weight = perceptual_weight
@@ -375,14 +375,14 @@ class PerceptualLoss(nn.Module):
         )
 
         self.criterion_type = criterion
-        if self.criterion_type == "l1":
+        if self.criterion_type == 'l1':
             self.criterion = torch.nn.L1Loss()
-        elif self.criterion_type == "l2":
+        elif self.criterion_type == 'l2':
             self.criterion = torch.nn.L2loss()
-        elif self.criterion_type == "fro":
+        elif self.criterion_type == 'fro':
             self.criterion = None
         else:
-            raise NotImplementedError(f"{criterion} criterion has not been supported.")
+            raise NotImplementedError(f'{criterion} criterion has not been supported.')
 
     def forward(self, x, gt):
         """Forward function.
@@ -402,9 +402,9 @@ class PerceptualLoss(nn.Module):
         if self.perceptual_weight > 0:
             percep_loss = 0
             for k in x_features.keys():
-                if self.criterion_type == "fro":
+                if self.criterion_type == 'fro':
                     percep_loss += (
-                        torch.norm(x_features[k] - gt_features[k], p="fro")
+                        torch.norm(x_features[k] - gt_features[k], p='fro')
                         * self.layer_weights[k]
                     )
                 else:
@@ -420,12 +420,12 @@ class PerceptualLoss(nn.Module):
         if self.style_weight > 0:
             style_loss = 0
             for k in x_features.keys():
-                if self.criterion_type == "fro":
+                if self.criterion_type == 'fro':
                     style_loss += (
                         torch.norm(
                             self._gram_mat(x_features[k])
                             - self._gram_mat(gt_features[k]),
-                            p="fro",
+                            p='fro',
                         )
                         * self.layer_weights[k]
                     )
@@ -477,7 +477,7 @@ class GANLoss(nn.Module):
         real_label_val=1.0,
         fake_label_val=0.0,
         loss_weight=1.0,
-        reduction="mean",
+        reduction='mean',
     ):
         super(GANLoss, self).__init__()
         self.gan_type = gan_type
@@ -485,18 +485,18 @@ class GANLoss(nn.Module):
         self.real_label_val = real_label_val
         self.fake_label_val = fake_label_val
 
-        if self.gan_type == "vanilla":
+        if self.gan_type == 'vanilla':
             self.loss = nn.BCEWithLogitsLoss(reduction=reduction)
-        elif self.gan_type == "lsgan":
+        elif self.gan_type == 'lsgan':
             self.loss = nn.MSELoss(reduction=reduction)
-        elif self.gan_type == "wgan":
+        elif self.gan_type == 'wgan':
             self.loss = self._wgan_loss
-        elif self.gan_type == "wgan_softplus":
+        elif self.gan_type == 'wgan_softplus':
             self.loss = self._wgan_softplus_loss
-        elif self.gan_type == "hinge":
+        elif self.gan_type == 'hinge':
             self.loss = nn.ReLU()
         else:
-            raise NotImplementedError(f"GAN type {self.gan_type} is not implemented.")
+            raise NotImplementedError(f'GAN type {self.gan_type} is not implemented.')
 
     def _wgan_loss(self, input, target):
         """wgan loss.
@@ -539,7 +539,7 @@ class GANLoss(nn.Module):
                 return Tensor.
         """
 
-        if self.gan_type in ["wgan", "wgan_softplus"]:
+        if self.gan_type in ['wgan', 'wgan_softplus']:
             return target_is_real
         target_val = self.real_label_val if target_is_real else self.fake_label_val
         return input.new_ones(input.size()) * target_val
@@ -557,7 +557,7 @@ class GANLoss(nn.Module):
             Tensor: GAN loss value.
         """
         target_label = self.get_target_label(input, target_is_real)
-        if self.gan_type == "hinge":
+        if self.gan_type == 'hinge':
             if is_disc:  # for discriminators in hinge-gan
                 input = -input if target_is_real else input
                 loss = self.loss(1 + input).mean()
@@ -687,18 +687,18 @@ class GANFeatLoss(nn.Module):
             Supported choices are 'none' | 'mean' | 'sum'. Default: 'mean'.
     """
 
-    def __init__(self, criterion="l1", loss_weight=1.0, reduction="mean"):
+    def __init__(self, criterion='l1', loss_weight=1.0, reduction='mean'):
         super(GANFeatLoss, self).__init__()
-        if criterion == "l1":
+        if criterion == 'l1':
             self.loss_op = L1Loss(loss_weight, reduction)
-        elif criterion == "l2":
+        elif criterion == 'l2':
             self.loss_op = MSELoss(loss_weight, reduction)
-        elif criterion == "charbonnier":
+        elif criterion == 'charbonnier':
             self.loss_op = CharbonnierLoss(loss_weight, reduction)
         else:
             raise ValueError(
-                f"Unsupported loss mode: {criterion}. "
-                f"Supported ones are: l1|l2|charbonnier"
+                f'Unsupported loss mode: {criterion}. '
+                f'Supported ones are: l1|l2|charbonnier'
             )
 
         self.loss_weight = loss_weight
@@ -793,7 +793,7 @@ def compute_meshgrid(shape):
 
 
 @weighted_loss
-def contextual_loss(pred, target, band_width=0.5, loss_type="cosine"):
+def contextual_loss(pred, target, band_width=0.5, loss_type='cosine'):
     """
     Computes contepredtual loss between pred and target.
     Parameters
@@ -814,21 +814,21 @@ def contextual_loss(pred, target, band_width=0.5, loss_type="cosine"):
         contextual loss between x and y (Eq (1) in the paper)
     """
 
-    assert pred.size() == target.size(), "input tensor must have the same size."
+    assert pred.size() == target.size(), 'input tensor must have the same size.'
     assert loss_type in [
-        "cosine",
-        "l1",
-        "l2",
+        'cosine',
+        'l1',
+        'l2',
     ], f"select a loss type from \
                                                 {['cosine', 'l1', 'l2']}."
 
     N, C, H, W = pred.size()
 
-    if loss_type == "cosine":
+    if loss_type == 'cosine':
         dist_raw = compute_cosine_distance(pred, target)
-    elif loss_type == "l1":
+    elif loss_type == 'l1':
         dist_raw = compute_l1_distance(pred, target)
-    elif loss_type == "l2":
+    elif loss_type == 'l2':
         dist_raw = compute_l2_distance(pred, target)
 
     dist_tilde = compute_relative_distance(dist_raw)
@@ -859,22 +859,22 @@ class ContextualLoss(nn.Module):
     def __init__(
         self,
         band_width=0.5,
-        loss_type="cosine",
+        loss_type='cosine',
         use_vgg=True,
-        vgg_layer="conv4_4",
+        vgg_layer='conv4_4',
         loss_weight=1.0,
-        reduction="mean",
+        reduction='mean',
     ):
         super().__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
-        if loss_type not in ["cosine", "l1", "l2"]:
-            raise ValueError(f"Unsupported loss mode: {reduction}.")
+        if loss_type not in ['cosine', 'l1', 'l2']:
+            raise ValueError(f'Unsupported loss mode: {reduction}.')
 
-        assert band_width > 0, "band_width parameter must be positive."
+        assert band_width > 0, 'band_width parameter must be positive.'
 
         self.band_width = band_width
         self.loss_weight = loss_weight
@@ -883,14 +883,14 @@ class ContextualLoss(nn.Module):
 
         if use_vgg:
             self.vgg_model = VGGFeatureExtractor(
-                layer_name_list=[vgg_layer], vgg_type="vgg19"
+                layer_name_list=[vgg_layer], vgg_type='vgg19'
             )
 
     def forward(self, pred, target, weight=None, **kwargs):
-        assert hasattr(self, "vgg_model"), "Please specify VGG model."
+        assert hasattr(self, 'vgg_model'), 'Please specify VGG model.'
         assert (
             pred.shape[1] == 3 and target.shape[1] == 3
-        ), "VGG model takes 3 chennel images."
+        ), 'VGG model takes 3 chennel images.'
 
         # picking up vgg feature maps
         pred_features = self.vgg_model(pred)
@@ -919,7 +919,7 @@ class ContextualLoss(nn.Module):
 
 
 @weighted_loss
-def cobi_loss(pred, target, weight_sp=0.1, band_width=0.5, loss_type="cosine"):
+def cobi_loss(pred, target, weight_sp=0.1, band_width=0.5, loss_type='cosine'):
     """
     Computes CoBi loss between pred and target.
     Parameters
@@ -942,11 +942,11 @@ def cobi_loss(pred, target, weight_sp=0.1, band_width=0.5, loss_type="cosine"):
         contextual loss between x and y (Eq (1) in the paper)
     """
 
-    assert pred.size() == target.size(), "input tensor must have the same size."
+    assert pred.size() == target.size(), 'input tensor must have the same size.'
     assert loss_type in [
-        "cosine",
-        "l1",
-        "l2",
+        'cosine',
+        'l1',
+        'l2',
     ], f"select a loss type from \
                                                 {['cosine', 'l1', 'l2']}."
 
@@ -959,11 +959,11 @@ def cobi_loss(pred, target, weight_sp=0.1, band_width=0.5, loss_type="cosine"):
     cx_sp = compute_cx(dist_tilde, band_width)
 
     # feature loss
-    if loss_type == "cosine":
+    if loss_type == 'cosine':
         dist_raw = compute_cosine_distance(pred, target)
-    elif loss_type == "l1":
+    elif loss_type == 'l1':
         dist_raw = compute_l1_distance(pred, target)
-    elif loss_type == "l2":
+    elif loss_type == 'l2':
         dist_raw = compute_l2_distance(pred, target)
     dist_tilde = compute_relative_distance(dist_raw)
     cx_feat = compute_cx(dist_tilde, band_width)
@@ -989,23 +989,23 @@ class CoBiLoss(nn.Module):
         self,
         band_width=0.5,
         weight_sp=0.1,
-        loss_type="cosine",
+        loss_type='cosine',
         use_vgg=True,
-        vgg_layer="conv4_4",
+        vgg_layer='conv4_4',
         loss_weight=1.0,
-        reduction="mean",
+        reduction='mean',
     ):
         super().__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
-        if loss_type not in ["cosine", "l1", "l2"]:
-            raise ValueError(f"Unsupported loss mode: {reduction}.")
+        if loss_type not in ['cosine', 'l1', 'l2']:
+            raise ValueError(f'Unsupported loss mode: {reduction}.')
 
-        assert band_width > 0, "band_width parameter must be positive."
-        assert weight_sp >= 0 and weight_sp <= 1, "weight_sp out of range [0, 1]."
+        assert band_width > 0, 'band_width parameter must be positive.'
+        assert weight_sp >= 0 and weight_sp <= 1, 'weight_sp out of range [0, 1].'
 
         self.band_width = band_width
         self.loss_weight = loss_weight
@@ -1015,14 +1015,14 @@ class CoBiLoss(nn.Module):
 
         if use_vgg:
             self.vgg_model = VGGFeatureExtractor(
-                layer_name_list=[vgg_layer], vgg_type="vgg19"
+                layer_name_list=[vgg_layer], vgg_type='vgg19'
             )
 
     def forward(self, pred, target, weight=None, **kwargs):
-        assert hasattr(self, "vgg_model"), "Please specify VGG model."
+        assert hasattr(self, 'vgg_model'), 'Please specify VGG model.'
         assert (
             pred.shape[1] == 3 and target.shape[1] == 3
-        ), "VGG model takes 3 chennel images."
+        ), 'VGG model takes 3 chennel images.'
 
         # picking up vgg feature maps
         pred_features = self.vgg_model(pred)
@@ -1045,7 +1045,7 @@ class CoBiLoss(nn.Module):
 
 
 @weighted_loss
-def mask_contextual_loss(pred, target, mask, band_width=0.5, loss_type="cosine"):
+def mask_contextual_loss(pred, target, mask, band_width=0.5, loss_type='cosine'):
     """
     Computes contepredtual loss between pred and target.
     Parameters
@@ -1066,26 +1066,26 @@ def mask_contextual_loss(pred, target, mask, band_width=0.5, loss_type="cosine")
         contextual loss between x and y (Eq (1) in the paper)
     """
 
-    assert pred.size() == target.size(), "input tensor must have the same size."
+    assert pred.size() == target.size(), 'input tensor must have the same size.'
     # assert pred.size() == mask.size(), 'input tensor must have the same size.'
     assert loss_type in [
-        "cosine",
-        "l1",
-        "l2",
+        'cosine',
+        'l1',
+        'l2',
     ], f"select a loss type from \
                                                 {['cosine', 'l1', 'l2']}."
 
     N, C, H, W = pred.size()
 
     mask = F.interpolate(
-        mask[:, None, ...], size=(H, W), mode="bilinear", align_corners=True
+        mask[:, None, ...], size=(H, W), mode='bilinear', align_corners=True
     )
 
-    if loss_type == "cosine":
+    if loss_type == 'cosine':
         dist_raw = compute_cosine_distance(pred, target)
-    elif loss_type == "l1":
+    elif loss_type == 'l1':
         dist_raw = compute_l1_distance(pred, target)
-    elif loss_type == "l2":
+    elif loss_type == 'l2':
         dist_raw = compute_l2_distance(pred, target)
 
     dist_tilde = compute_relative_distance(dist_raw)
@@ -1117,27 +1117,27 @@ class MaskContextualLoss(nn.Module):
     def __init__(
         self,
         band_width=0.5,
-        loss_type="cosine",
+        loss_type='cosine',
         use_vgg=True,
-        vgg_layer="conv4_4",
+        vgg_layer='conv4_4',
         loss_weight=1.0,
-        reduction="mean",
-        mask_type="flow",
+        reduction='mean',
+        mask_type='flow',
         alpha=0.01,
         beta=10,
     ):
         super().__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
-        if loss_type not in ["cosine", "l1", "l2"]:
-            raise ValueError(f"Unsupported loss mode: {loss_type}.")
-        if mask_type != "flow":
-            raise ValueError(f"Unsupported mask type: {mask_type}.")
+        if loss_type not in ['cosine', 'l1', 'l2']:
+            raise ValueError(f'Unsupported loss mode: {loss_type}.')
+        if mask_type != 'flow':
+            raise ValueError(f'Unsupported mask type: {mask_type}.')
 
-        assert band_width > 0, "band_width parameter must be positive."
+        assert band_width > 0, 'band_width parameter must be positive.'
 
         self.band_width = band_width
         self.loss_weight = loss_weight
@@ -1146,21 +1146,21 @@ class MaskContextualLoss(nn.Module):
         self.alpha = alpha
         self.beta = beta
 
-        if mask_type == "flow":
+        if mask_type == 'flow':
             self.flow_model = FlowGenerator(
-                path="experiments/pretrained_models/flownet/pwc_net.pth.tar"
+                path='experiments/pretrained_models/flownet/pwc_net.pth.tar'
             )
 
         if use_vgg:
             self.vgg_model = VGGFeatureExtractor(
-                layer_name_list=[vgg_layer], vgg_type="vgg19"
+                layer_name_list=[vgg_layer], vgg_type='vgg19'
             )
 
     def forward(self, pred, target, weight=None, **kwargs):
-        assert hasattr(self, "vgg_model"), "Please specify VGG model."
+        assert hasattr(self, 'vgg_model'), 'Please specify VGG model.'
         assert (
             pred.shape[1] == 3 and target.shape[1] == 3
-        ), "VGG model takes 3 chennel images."
+        ), 'VGG model takes 3 chennel images.'
 
         # picking up vgg feature maps
         pred_features = self.vgg_model(pred)
@@ -1213,23 +1213,23 @@ class CostVolumeLoss(nn.Module):
     def __init__(
         self,
         loss_weight=1.0,
-        reduction="mean",
+        reduction='mean',
         kernel_size=5,
-        bound="min",
+        bound='min',
         use_mask=False,
         alpha=0.1,
         beta=0.5,
         use_vgg=False,
-        vgg_layer="conv4_4",
+        vgg_layer='conv4_4',
     ):
         super().__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
-        if bound not in ["min", "max"]:
-            raise ValueError(f"Unsupported bound mode: {bound}.")
+        if bound not in ['min', 'max']:
+            raise ValueError(f'Unsupported bound mode: {bound}.')
 
         self.loss_weight = loss_weight
         self.reduction = reduction
@@ -1247,19 +1247,19 @@ class CostVolumeLoss(nn.Module):
         )
 
         self.flow_model = FlowGenerator(
-            load_path="experiments/pretrained_models/RAFT/raft-things.pth"
+            load_path='experiments/pretrained_models/RAFT/raft-things.pth'
         )
 
         if use_vgg:
             self.vgg_model = VGGFeatureExtractor(
-                layer_name_list=[vgg_layer], vgg_type="vgg19"
+                layer_name_list=[vgg_layer], vgg_type='vgg19'
             )
 
     def forward(self, pred, target, weight=None, **kwargs):
-        assert hasattr(self, "flow_model"), "Please specify optical flow model."
+        assert hasattr(self, 'flow_model'), 'Please specify optical flow model.'
         assert (
             pred.shape[1] == 3 and target.shape[1] == 3
-        ), "flow model takes 3 chennel images."
+        ), 'flow model takes 3 chennel images.'
 
         N, C, H, W = pred.shape
 
@@ -1279,17 +1279,17 @@ class CostVolumeLoss(nn.Module):
         else:
             expand_source, unfold_target = self.unfold_and_expand(pred, target_warpped)
 
-        diff_map = F.l1_loss(expand_source, unfold_target, reduction="none")
+        diff_map = F.l1_loss(expand_source, unfold_target, reduction='none')
         diff_map = torch.mean(diff_map, dim=1)  # average over channel dimension
         # print(diff_map.shape)
 
         # bound inside the patch of cost volume.
-        if self.bound == "min":
+        if self.bound == 'min':
             diff_map = torch.min(diff_map, dim=1, keepdim=True)[0]
-        elif self.bound == "max":
+        elif self.bound == 'max':
             diff_map = torch.max(diff_map, dim=1, keepdim=True)[0]
         else:
-            raise ValueError(f"Unrecognized bound mode: {self.bound}.")
+            raise ValueError(f'Unrecognized bound mode: {self.bound}.')
 
         if self.use_mask:
             occlusion_mask = self.mask_occlusion(pred, target).unsqueeze(1)
@@ -1297,7 +1297,7 @@ class CostVolumeLoss(nn.Module):
             occlusion_mask = F.interpolate(
                 occlusion_mask,
                 size=diff_map.shape[-2:],
-                mode="bilinear",
+                mode='bilinear',
                 align_corners=True,
             ).detach()
             diff_map = diff_map * occlusion_mask
@@ -1323,7 +1323,7 @@ class CostVolumeLoss(nn.Module):
         return mask.float()
 
     def unfold_and_expand(self, pred, target):
-        assert pred.shape == target.shape, "Pred and Target shape mismatch."
+        assert pred.shape == target.shape, 'Pred and Target shape mismatch.'
 
         N, C, H, W = pred.shape
         unfold_target = self.unfold(target).view(N, C, self.patch_shape, H, W).detach()
@@ -1332,18 +1332,18 @@ class CostVolumeLoss(nn.Module):
 
 
 @weighted_loss
-def mask_cv_loss(pred, target, bound="min"):
-    diff_map = F.l1_loss(pred, target, reduction="none")
+def mask_cv_loss(pred, target, bound='min'):
+    diff_map = F.l1_loss(pred, target, reduction='none')
     diff_map = torch.mean(diff_map, dim=1)  # average over channel dimension
     # print(diff_map.shape)
 
     # bound inside the patch of cost volume.
-    if bound == "min":
+    if bound == 'min':
         diff_map = torch.min(diff_map, dim=1, keepdim=True)[0]
-    elif bound == "max":
+    elif bound == 'max':
         diff_map = torch.max(diff_map, dim=1, keepdim=True)[0]
     else:
-        raise ValueError(f"Unrecognized bound mode: {bound}.")
+        raise ValueError(f'Unrecognized bound mode: {bound}.')
 
     return diff_map
 
@@ -1362,20 +1362,20 @@ class MaskCostVolumeLoss(nn.Module):
     def __init__(
         self,
         loss_weight=1.0,
-        reduction="mean",
+        reduction='mean',
         kernel_size=5,
-        bound="min",
+        bound='min',
         use_vgg=False,
-        vgg_layer="conv4_4",
+        vgg_layer='conv4_4',
     ):
         super().__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
-        if bound not in ["min", "max"]:
-            raise ValueError(f"Unsupported bound mode: {bound}.")
+        if bound not in ['min', 'max']:
+            raise ValueError(f'Unsupported bound mode: {bound}.')
 
         self.loss_weight = loss_weight
         self.reduction = reduction
@@ -1391,13 +1391,13 @@ class MaskCostVolumeLoss(nn.Module):
 
         if use_vgg:
             self.vgg_model = VGGFeatureExtractor(
-                layer_name_list=[vgg_layer], vgg_type="vgg19"
+                layer_name_list=[vgg_layer], vgg_type='vgg19'
             )
 
     def forward(self, pred, target, weight=None, **kwargs):
         assert (
             pred.shape[1] == 3 and target.shape[1] == 3
-        ), "flow model takes 3 chennel images."
+        ), 'flow model takes 3 chennel images.'
 
         N, C, H, W = pred.shape
 
@@ -1424,7 +1424,7 @@ class MaskCostVolumeLoss(nn.Module):
         return self.loss_weight * cv_loss
 
     def unfold_and_expand(self, pred, target):
-        assert pred.shape == target.shape, "Pred and Target shape mismatch."
+        assert pred.shape == target.shape, 'Pred and Target shape mismatch.'
 
         N, C, H, W = pred.shape
         unfold_target = self.unfold(target).view(N, C, self.patch_shape, H, W).detach()
@@ -1448,11 +1448,11 @@ def normalize_feature(x):
     return x
 
 
-def calc_emd_distance(cost_map, weight_p, weight_t, solver="opencv"):
+def calc_emd_distance(cost_map, weight_p, weight_t, solver='opencv'):
     N = cost_map.shape[0]
     sim_score = torch.zeros_like(cost_map, device=cost_map.device)
 
-    if solver == "opencv":  # use openCV solver
+    if solver == 'opencv':  # use openCV solver
         for i in range(N):
             _, flow = emd_inference_opencv(
                 1 - cost_map[i, :, :], weight_p[i, :], weight_t[i, :]
@@ -1464,10 +1464,10 @@ def calc_emd_distance(cost_map, weight_p, weight_t, solver="opencv"):
 
         sim_score = sim_score.sum(-1)
         return sim_score
-    elif solver == "qpth":
-        raise NotImplementedError("QPTH solver is not implemented yet.")
+    elif solver == 'qpth':
+        raise NotImplementedError('QPTH solver is not implemented yet.')
     else:
-        raise ValueError("Unknown Solver")
+        raise ValueError('Unknown Solver')
 
 
 def emd_inference_opencv(cost_matrix, weight1, weight2):
@@ -1496,7 +1496,7 @@ def emd_inference_opencv(cost_matrix, weight1, weight2):
     return cost, flow
 
 
-def EMD_loss(pred, target, temperature=0.5, loss_type="cosine", solver="opencv"):
+def EMD_loss(pred, target, temperature=0.5, loss_type='cosine', solver='opencv'):
     """
     Computes EMD loss between pred and target.
     Parameters
@@ -1519,14 +1519,14 @@ def EMD_loss(pred, target, temperature=0.5, loss_type="cosine", solver="opencv")
         EMD loss between x and y
     """
 
-    assert pred.size() == target.size(), "input tensor must have the same size."
+    assert pred.size() == target.size(), 'input tensor must have the same size.'
     assert loss_type in [
-        "cosine",
-        "l1",
-        "l2",
+        'cosine',
+        'l1',
+        'l2',
     ], f"select a loss type from \
                                                 {['cosine', 'l1', 'l2']}."
-    assert solver in ["opencv", "QPTH"], f"select a solver from {['opencv', 'QPTH']}."
+    assert solver in ['opencv', 'QPTH'], f"select a solver from {['opencv', 'QPTH']}."
 
     N, C, H, W = pred.size()
 
@@ -1554,17 +1554,17 @@ def EMD_loss(pred, target, temperature=0.5, loss_type="cosine", solver="opencv")
     #     similarity_map = 1 - dist_map
 
     # similarity from CX.
-    if loss_type == "cosine":
+    if loss_type == 'cosine':
         dist_raw = compute_cosine_distance(pred, target)
-    elif loss_type == "l1":
+    elif loss_type == 'l1':
         dist_raw = compute_l1_distance(pred, target)
-    elif loss_type == "l2":
+    elif loss_type == 'l2':
         dist_raw = compute_l2_distance(pred, target)
 
     dist_tilde = compute_relative_distance(dist_raw)
     similarity_map = compute_cx(dist_tilde, temperature)
 
-    sim_score = calc_emd_distance(similarity_map, weight_p, weight_t, solver="opencv")
+    sim_score = calc_emd_distance(similarity_map, weight_p, weight_t, solver='opencv')
     # sim_score = torch.exp()  # Eq(3)
 
     # pdb.set_trace()
@@ -1594,25 +1594,25 @@ class DeepEMDLoss(nn.Module):
     def __init__(
         self,
         temperature=0.5,
-        loss_type="cosine",
+        loss_type='cosine',
         use_vgg=True,
-        vgg_layers=["conv4_4"],
-        solver="opencv",
+        vgg_layers=['conv4_4'],
+        solver='opencv',
         loss_weight=1.0,
-        reduction="sum",
+        reduction='sum',
     ):
         super().__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
-        if loss_type not in ["cosine", "l1", "l2"]:
-            raise ValueError(f"Unsupported loss mode: {loss_type}.")
-        if solver not in ["opencv", "qpth"]:
-            raise ValueError(f"Unsupported loss mode: {solver}.")
+        if loss_type not in ['cosine', 'l1', 'l2']:
+            raise ValueError(f'Unsupported loss mode: {loss_type}.')
+        if solver not in ['opencv', 'qpth']:
+            raise ValueError(f'Unsupported loss mode: {solver}.')
 
-        assert temperature > 0, "temperature parameter must be positive."
+        assert temperature > 0, 'temperature parameter must be positive.'
 
         self.temperature = temperature
         self.loss_weight = loss_weight
@@ -1622,14 +1622,14 @@ class DeepEMDLoss(nn.Module):
 
         if use_vgg:
             self.vgg_model = VGGFeatureExtractor(
-                layer_name_list=vgg_layers, vgg_type="vgg19"
+                layer_name_list=vgg_layers, vgg_type='vgg19'
             )
 
     def forward(self, pred, target, weight=None, **kwargs):
-        assert hasattr(self, "vgg_model"), "Please specify VGG model."
+        assert hasattr(self, 'vgg_model'), 'Please specify VGG model.'
         assert (
             pred.shape[1] == 3 and target.shape[1] == 3
-        ), "VGG model takes 3 chennel images."
+        ), 'VGG model takes 3 chennel images.'
 
         # picking up vgg feature maps
         pred_features = self.vgg_model(pred)
@@ -1651,7 +1651,7 @@ class DeepEMDLoss(nn.Module):
 
 
 def RelaxEMD_loss(
-    pred, target, temperature=0.5, loss_type="cosine", match_type="dual_softmax"
+    pred, target, temperature=0.5, loss_type='cosine', match_type='dual_softmax'
 ):
     """
     Computes EMD loss between pred and target.
@@ -1675,16 +1675,16 @@ def RelaxEMD_loss(
         EMD loss between x and y
     """
 
-    assert pred.size() == target.size(), "input tensor must have the same size."
+    assert pred.size() == target.size(), 'input tensor must have the same size.'
     assert loss_type in [
-        "cosine",
-        "l1",
-        "l2",
+        'cosine',
+        'l1',
+        'l2',
     ], f"select a loss type from \
                                                 {['cosine', 'l1', 'l2']}."
     assert match_type in [
-        "dual_softmax",
-        "sinkhorn",
+        'dual_softmax',
+        'sinkhorn',
     ], f"select a match_type from {['dual_softmax', 'sinkhorn']}."
 
     N, C, H, W = pred.size()
@@ -1695,8 +1695,8 @@ def RelaxEMD_loss(
     # normalize
     pred, target = map(lambda feat: feat / feat.shape[-2] ** 0.5, [pred, target])
 
-    if match_type == "dual_softmax":
-        sim_matrix = torch.einsum("ncl,ncs->nls", pred, target) / temperature
+    if match_type == 'dual_softmax':
+        sim_matrix = torch.einsum('ncl,ncs->nls', pred, target) / temperature
         conf_matrix = F.softmax(sim_matrix, 1) * F.softmax(sim_matrix, 2)
 
     # if loss_type == 'cosine':
@@ -1713,17 +1713,17 @@ def RelaxEMD_loss(
     #     similarity_map = 1 - dist_map
 
     # similarity from CX.
-    if loss_type == "cosine":
+    if loss_type == 'cosine':
         dist_raw = compute_cosine_distance(pred, target)
-    elif loss_type == "l1":
+    elif loss_type == 'l1':
         dist_raw = compute_l1_distance(pred, target)
-    elif loss_type == "l2":
+    elif loss_type == 'l2':
         dist_raw = compute_l2_distance(pred, target)
 
     dist_tilde = compute_relative_distance(dist_raw)
     similarity_map = compute_cx(dist_tilde, temperature)
 
-    sim_score = calc_emd_distance(similarity_map, weight_p, weight_t, solver="opencv")
+    sim_score = calc_emd_distance(similarity_map, weight_p, weight_t, solver='opencv')
     # sim_score = torch.exp()  # Eq(3)
 
     # pdb.set_trace()
@@ -1753,25 +1753,25 @@ class RelaxEMDLoss(nn.Module):
     def __init__(
         self,
         temperature=0.5,
-        loss_type="cosine",
+        loss_type='cosine',
         use_vgg=True,
-        vgg_layers=["conv4_4"],
-        match_type="dual_softmax",
+        vgg_layers=['conv4_4'],
+        match_type='dual_softmax',
         loss_weight=1.0,
-        reduction="sum",
+        reduction='sum',
     ):
         super().__init__()
-        if reduction not in ["none", "mean", "sum"]:
+        if reduction not in ['none', 'mean', 'sum']:
             raise ValueError(
-                f"Unsupported reduction mode: {reduction}. "
-                f"Supported ones are: {_reduction_modes}"
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
             )
-        if loss_type not in ["cosine", "l1", "l2"]:
-            raise ValueError(f"Unsupported loss mode: {loss_type}.")
-        if match_type not in ["dual_softmax", "sinkhorn"]:
-            raise ValueError(f"Unsupported match type: {match_type}.")
+        if loss_type not in ['cosine', 'l1', 'l2']:
+            raise ValueError(f'Unsupported loss mode: {loss_type}.')
+        if match_type not in ['dual_softmax', 'sinkhorn']:
+            raise ValueError(f'Unsupported match type: {match_type}.')
 
-        assert temperature > 0, "temperature parameter must be positive."
+        assert temperature > 0, 'temperature parameter must be positive.'
 
         self.temperature = temperature
         self.loss_weight = loss_weight
@@ -1781,14 +1781,14 @@ class RelaxEMDLoss(nn.Module):
 
         if use_vgg:
             self.vgg_model = VGGFeatureExtractor(
-                layer_name_list=vgg_layers, vgg_type="vgg19"
+                layer_name_list=vgg_layers, vgg_type='vgg19'
             )
 
     def forward(self, pred, target, weight=None, **kwargs):
-        assert hasattr(self, "vgg_model"), "Please specify VGG model."
+        assert hasattr(self, 'vgg_model'), 'Please specify VGG model.'
         assert (
             pred.shape[1] == 3 and target.shape[1] == 3
-        ), "VGG model takes 3 chennel images."
+        ), 'VGG model takes 3 chennel images.'
 
         # picking up vgg feature maps
         pred_features = self.vgg_model(pred)

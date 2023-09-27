@@ -188,7 +188,7 @@ class TransformerUnit(nn.Module):
         pos_en_flag=True,
         mlp_ratio=2,
         k_size=5,
-        attn_type="softmax",
+        attn_type='softmax',
         fuse_type=None,
     ):
         super().__init__()
@@ -205,18 +205,18 @@ class TransformerUnit(nn.Module):
         self.norm = nn.GroupNorm(1, self.feat_dim)
 
         if fuse_type:
-            if fuse_type == "conv":
+            if fuse_type == 'conv':
                 self.fuse_conv = double_conv(in_ch=feat_dim, out_ch=feat_dim)
-            elif fuse_type == "mask":
+            elif fuse_type == 'mask':
                 self.fuse_conv = double_conv(in_ch=feat_dim, out_ch=feat_dim)
 
     def forward(self, q, k, v, flow, mask=None):
         if q.shape[-2:] != flow.shape[-2:]:
             # pdb.set_trace()
-            flow = resize_flow(flow, "shape", q.shape[-2:])
+            flow = resize_flow(flow, 'shape', q.shape[-2:])
         if mask != None and q.shape[-2:] != mask.shape[-2:]:
             # pdb.set_trace()
-            mask = F.interpolate(mask, size=q.shape[-2:], mode="nearest")
+            mask = F.interpolate(mask, size=q.shape[-2:], mode='nearest')
         if self.pos_en_flag:
             q_pos_embed = self.pos_en(q)
             k_pos_embed = self.pos_en(k)
@@ -236,11 +236,11 @@ class TransformerUnit(nn.Module):
         # print(attn.shape)
 
         if self.fuse_type:
-            if self.fuse_type == "conv":
+            if self.fuse_type == 'conv':
                 out = out + self.fuse_conv(q)
-            elif self.fuse_type == "mask":
+            elif self.fuse_type == 'mask':
                 try:
-                    assert mask != None, "No mask found."
+                    assert mask != None, 'No mask found.'
                 except:
                     pdb.set_trace()
                 out = (1 - mask) * out + mask * self.fuse_conv(q)
@@ -300,7 +300,7 @@ class MultiheadAttention(nn.Module):
         # after-attention combine heads
         self.fc = nn.Conv2d(n_head * d_v, feat_dim, 1, bias=False)
 
-    def forward(self, q, k, v, flow, attn_type="softmax"):
+    def forward(self, q, k, v, flow, attn_type='softmax'):
         # input: n x c x h x w
         # flow: n x 2 x h x w
         d_k, d_v, n_head = self.d_k, self.d_v, self.n_head
@@ -327,13 +327,13 @@ class MultiheadAttention(nn.Module):
         v = sample_v_feat.view(n, self.k_size**2, n_head, d_v, h, w)
 
         # -------------- Attention -----------------
-        if attn_type == "softmax":
+        if attn_type == 'softmax':
             # n x 1 x nhead x dk x h x w --> n x nhead x dv x h x w
             q, attn = softmax_attention(q, k, v)
-        elif attn_type == "dot":
+        elif attn_type == 'dot':
             q, attn = dotproduct_attention(q, k, v)
         else:
-            raise NotImplementedError(f"Unknown attention type {attn_type}")
+            raise NotImplementedError(f'Unknown attention type {attn_type}')
 
         # Concatenate all the heads together
         # n x (nhead*dv) x h x w
@@ -408,8 +408,8 @@ def flow_guide_sampler(
     feat,
     vgrid_scaled,
     k_size=5,
-    interp_mode="bilinear",
-    padding_mode="zeros",
+    interp_mode='bilinear',
+    padding_mode='zeros',
     align_corners=True,
 ):
     # feat (Tensor): Tensor with size (n, c, h, w).
@@ -442,42 +442,42 @@ class AlignFormer(nn.Module):
         mlp_ratio=2,
         pos_en_flag=True,
         k_size=5,
-        attn_type="softmax",
-        flow_type="pwc",
+        attn_type='softmax',
+        flow_type='pwc',
         fuse_type=None,
         **kwargs,
     ):
         super().__init__()
 
-        if flow_type == "spynet":
+        if flow_type == 'spynet':
             from alignformer.archs.spynet_arch import FlowGenerator
 
-            self.flow_estimator = FlowGenerator(load_path=kwargs["flow_model_path"])
-        elif flow_type == "pwc":
+            self.flow_estimator = FlowGenerator(load_path=kwargs['flow_model_path'])
+        elif flow_type == 'pwc':
             from alignformer.archs.pwcnet_arch import FlowGenerator
 
-            self.flow_estimator = FlowGenerator(path=kwargs["flow_model_path"])
-        elif flow_type == "raft":
+            self.flow_estimator = FlowGenerator(path=kwargs['flow_model_path'])
+        elif flow_type == 'raft':
             from alignformer.archs.raft_arch import FlowGenerator
 
             self.flow_estimator = FlowGenerator(
-                load_path=kwargs["flow_model_path"], requires_grad=kwargs["flow_ft"]
+                load_path=kwargs['flow_model_path'], requires_grad=kwargs['flow_ft']
             )
         else:
-            raise ValueError(f"Unrecognized flow type: {self.flow_type}.")
+            raise ValueError(f'Unrecognized flow type: {self.flow_type}.')
 
         # Define DAM.
-        if kwargs["dam_ft"]:
-            assert kwargs["dam_path"] != None
+        if kwargs['dam_ft']:
+            assert kwargs['dam_path'] != None
         from alignformer.archs.dam_arch import DAModule
 
         self.DAM = DAModule(
             in_ch=src_ch,
-            feat_ch=kwargs["dam_feat"],
+            feat_ch=kwargs['dam_feat'],
             out_ch=src_ch,
-            demodulate=kwargs["dam_demodulate"],
-            load_path=kwargs["dam_path"],
-            requires_grad=kwargs["dam_ft"],
+            demodulate=kwargs['dam_demodulate'],
+            load_path=kwargs['dam_path'],
+            requires_grad=kwargs['dam_ft'],
         )
 
         # Define feature extractor.
@@ -527,29 +527,29 @@ class AlignFormer(nn.Module):
             single_conv(feat_dim, feat_dim), nn.Conv2d(feat_dim, out_ch, 3, 1, 1)
         )
 
-        if not kwargs["main_ft"]:
+        if not kwargs['main_ft']:
             self.eval()
             for key, param in self.named_parameters():
-                if "flow_estimator" not in key and "DAM" not in key:
+                if 'flow_estimator' not in key and 'DAM' not in key:
                     param.requires_grad = False
         else:
             self.train()
             for key, param in self.named_parameters():
-                if "flow_estimator" not in key and "DAM" not in key:
+                if 'flow_estimator' not in key and 'DAM' not in key:
                     param.requires_grad = True
 
     def forward(self, src, ref, mask=None):
         assert (
             src.shape == ref.shape
-        ), "Shapes of source and reference images \
-                                        mismatch."
+        ), 'Shapes of source and reference images \
+                                        mismatch.'
         if not self.training:
             N, C, H, W = src.shape
             mod_size = 4
             H_pad = mod_size - H % mod_size if not H % mod_size == 0 else 0
             W_pad = mod_size - W % mod_size if not W % mod_size == 0 else 0
-            src = F.pad(src, (0, W_pad, 0, H_pad), "replicate")
-            ref = F.pad(ref, (0, W_pad, 0, H_pad), "replicate")
+            src = F.pad(src, (0, W_pad, 0, H_pad), 'replicate')
+            ref = F.pad(ref, (0, W_pad, 0, H_pad), 'replicate')
 
         src = self.DAM(src, ref)
 
@@ -595,7 +595,7 @@ class AlignFormer(nn.Module):
         return out
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     height = 256
     width = 256
     batch_size = 4
@@ -604,9 +604,9 @@ if __name__ == "__main__":
         nhead=4,
         mlp_ratio=2,
         k_size=5,
-        attn_type="softmax",
-        flow_type="raft",
-        flow_model_path="../../experiments/pretrained_models/RAFT/raft-things.pth",
+        attn_type='softmax',
+        flow_type='raft',
+        flow_model_path='../../experiments/pretrained_models/RAFT/raft-things.pth',
         flow_ft=False,
         dam_ft=False,
         dam_feat=64,
@@ -615,9 +615,9 @@ if __name__ == "__main__":
         dam_path=None,
     ).cuda()
     load_net = torch.load(
-        "../../experiments/pretrained_models/AlignFormer.pth",
+        '../../experiments/pretrained_models/AlignFormer.pth',
         map_location=lambda storage, loc: storage,
-    )["params_ema"]
+    )['params_ema']
     pdb.set_trace()
     model.load_state_dict(load_net, strict=True)
     print(model)

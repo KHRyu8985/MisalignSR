@@ -9,7 +9,7 @@ def main():
     cwd = Path().resolve()
     rootdir = pyrootutils.setup_root(
         search_from=cwd,
-        indicator=".project-root",
+        indicator='.project-root',
         project_root_env_var=True,
         dotenv=True,
         pythonpath=True,
@@ -17,14 +17,14 @@ def main():
     ) # root: root folder path of the directory
     rootdir = os.path.join(rootdir, 'datasets/DIV2K')
 
-    print("Path for the root folder is:")
+    print('Path for the root folder is:')
     print(rootdir)
 
-    hr_train = os.path.join(rootdir, "DIV2K_train_HR_sub")
-    meta_hr = os.path.join(rootdir, "DIV2K_meta_HR_sub")
+    hr_train = os.path.join(rootdir, 'DIV2K_train_HR_sub')
+    meta_hr = os.path.join(rootdir, 'DIV2K_meta_HR_sub')
 
-    lr_train_roots = ["DIV2K_train_LR_bicubic/X2_sub", "DIV2K_train_LR_bicubic/X3_sub", "DIV2K_train_LR_bicubic/X4_sub"]
-    meta_lr_roots = ["DIV2K_meta_LR_bicubic/X2_sub", "DIV2K_meta_LR_bicubic/X3_sub", "DIV2K_meta_LR_bicubic/X4_sub"]
+    lr_train_roots = ['DIV2K_train_LR_bicubic/X2_sub', 'DIV2K_train_LR_bicubic/X3_sub', 'DIV2K_train_LR_bicubic/X4_sub']
+    meta_lr_roots = ['DIV2K_meta_LR_bicubic/X2_sub', 'DIV2K_meta_LR_bicubic/X3_sub', 'DIV2K_meta_LR_bicubic/X4_sub']
 
     if not os.path.exists(meta_hr):
         os.makedirs(meta_hr)
@@ -49,5 +49,5 @@ def main():
             if os.path.exists(src_path):
                 shutil.copy(src_path, dest_path)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

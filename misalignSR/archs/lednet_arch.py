@@ -18,7 +18,7 @@ class KernelConv2D(nn.Module):
         N, kernels, H, W = kernel.size()
         pad = (self.ksize - 1) // 2
 
-        feat_in = F.pad(feat_in, (pad, pad, pad, pad), mode="replicate")
+        feat_in = F.pad(feat_in, (pad, pad, pad, pad), mode='replicate')
         feat_in = feat_in.unfold(2, self.ksize, 1).unfold(3, self.ksize, 1)
         feat_in = feat_in.permute(0, 2, 3, 1, 4, 5).contiguous()
         feat_in = feat_in.reshape(N, H, W, channels, -1)
