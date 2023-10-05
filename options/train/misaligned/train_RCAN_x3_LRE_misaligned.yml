@@ -17,15 +17,15 @@ datasets:
     io_backend:
       type: disk
 
-    gt_size: 144
+    gt_size: 120
     use_hflip: true
     use_rot: true
 
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 3
-    batch_size_per_gpu: 8
-    dataset_enlarge_ratio: 1
+    batch_size_per_gpu: 16
+    dataset_enlarge_ratio: 10
     prefetch_mode: ~
 
   val:
@@ -41,9 +41,9 @@ network_g:
   type: RCAN
   num_in_ch: 3
   num_out_ch: 3
-  num_feat: 32
+  num_feat: 64
   num_group: 10
-  num_block: 20
+  num_block: 15
   squeeze_factor: 16
   upscale: 3
   res_scale: 1
@@ -54,8 +54,8 @@ network_g:
 # path
 path:
   pretrain_network_g: ~
-  strict_load_g: true
-  resume_state: ~
+  strict_load_g: False
+  resume_state: ~ # path to the checkpoint e.g) /home/kanghyun/MisalignSR/experiments/RCANx3_scratch_DIV2K_LRE_misaligned/training_states/60000.state
 
 # training settings
 train:

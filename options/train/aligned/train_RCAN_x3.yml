@@ -15,7 +15,7 @@ datasets:
     io_backend:
       type: disk
 
-    gt_size: 144
+    gt_size: 120
     use_hflip: true
     use_rot: true
 
@@ -41,7 +41,7 @@ network_g:
   num_out_ch: 3
   num_feat: 64
   num_group: 10
-  num_block: 20
+  num_block: 15
   squeeze_factor: 16
   upscale: 3
   res_scale: 1
