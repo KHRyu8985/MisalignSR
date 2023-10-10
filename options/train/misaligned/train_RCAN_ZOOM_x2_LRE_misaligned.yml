@@ -1,17 +1,19 @@
 # general settings
-name: RCANx3_scratch_DIV2K
-model_type: SRModel
-scale: 3
+name: RCANx2_scratch_ZOOM_LRE_misaligned
+model_type: LRESRModel
+scale: 2
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
 # dataset and data loader settings
 datasets:
   train:
-    name: DIV2K
-    type: PairedImageDataset
-    dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub
-    dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X3_sub
+    name: ZOOM
+    type: PairedMetaImageDataset
+    dataroot_gt: datasets/ZOOM/ZOOM_train_HR_sub
+    dataroot_lq: datasets/ZOOM/ZOOM_train_LR_real/X2_sub
+    dataroot_meta_gt: datasets/ZOOM/ZOOM_meta_HR_sub
+    dataroot_meta_lq: datasets/ZOOM/ZOOM_meta_LR_bicubic/X2_sub
     io_backend:
       type: disk
 
@@ -27,10 +29,10 @@ datasets:
     prefetch_mode: ~
 
   val:
-    name: DIV2K
+    name: ZOOM
     type: PairedImageDataset
-    dataroot_gt: datasets/DIV2K/DIV2K_valid_HR_sub
-    dataroot_lq: datasets/DIV2K/DIV2K_valid_LR_bicubic/X3_sub
+    dataroot_gt: datasets/ZOOM/ZOOM_valid_HR_sub
+    dataroot_lq: datasets/ZOOM/ZOOM_valid_LR_real/X2_sub
     io_backend:
       type: disk
 
@@ -43,7 +45,7 @@ network_g:
   num_group: 10
   num_block: 15
   squeeze_factor: 16
-  upscale: 3
+  upscale: 2
   res_scale: 1
   img_range: 255.
   rgb_mean: [0.4488, 0.4371, 0.4040]
@@ -52,8 +54,8 @@ network_g:
 # path
 path:
   pretrain_network_g: ~
-  strict_load_g: true
-  resume_state: ~
+  strict_load_g: False
+  resume_state: ~ # path to the checkpoint e.g) /home/kanghyun/MisalignSR/experiments/RCANx2_scratch_ZOOM_LRE_misaligned/training_states/60000.state
 
 # training settings
 train:
@@ -80,7 +82,7 @@ train:
 
 val:
   val_freq: !!float 5e3
-  save_img: False
+  save_img: True
 
   metrics:
     psnr: # metric name, can be arbitrary
