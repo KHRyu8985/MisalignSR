@@ -4,6 +4,7 @@ import random
 import pyrootutils
 from pathlib import Path
 
+
 def main():
 
     cwd = Path().resolve()
@@ -14,7 +15,7 @@ def main():
         dotenv=True,
         pythonpath=True,
         cwd=True,
-    ) # root: root folder path of the directory
+    )  # root: root folder path of the directory
     rootdir = os.path.join(rootdir, 'datasets/ZOOM')
 
     print('Path for the root folder is:')
@@ -49,6 +50,7 @@ def main():
             dest_path = os.path.join(rootdir, meta_lr, file)
             if os.path.exists(src_path):
                 shutil.copy(src_path, dest_path)
+
 
 if __name__ == '__main__':
     main()

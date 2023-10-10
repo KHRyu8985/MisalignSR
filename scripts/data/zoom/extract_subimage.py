@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 import os
-import sys
 from multiprocessing import Pool
 from os import path as osp
 from tqdm import tqdm
@@ -172,24 +171,22 @@ def worker(path, opt):
     img_name, extension = osp.splitext(osp.basename(path))
 
     # remove the x2, x3, x4 and x8 in the filename for ZOOM
-    img_name = (
-        img_name.replace('x2', '').replace('x3', '').replace('x4', '').replace('x8', '')
-    )
+    img_name = (img_name.replace('x2', '').replace('x3', '').replace('x4', '').replace('x8', ''))
 
     img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
-    
+
     h, w = img.shape[0:2]
 
-    if hr_img :
-        h2 = int(h/2) * 2
-        w2 = int(w/2) * 2
+    if hr_img:
+        h2 = int(h / 2) * 2
+        w2 = int(w / 2) * 2
 
-        if h==h2 and w==w2:
+        if h == h2 and w == w2:
             pass
         else:
-            img = cv2.resize(img,(h2,w2))
-            h,w = img.shape[0:2]
-    
+            img = cv2.resize(img, (h2, w2))
+            h, w = img.shape[0:2]
+
     h_space = np.arange(0, h - crop_size + 1, step)
     if h - (h_space[-1] + crop_size) > thresh_size:
         h_space = np.append(h_space, h - crop_size)
@@ -200,9 +197,7 @@ def worker(path, opt):
     index = 0
 
     if opt['shift_level'] > 0:
-        shift_expr = int(
-            crop_size * opt['shift_level'] / 200
-        )  # 1% of crop size (0.5% random)
+        shift_expr = int(crop_size * opt['shift_level'] / 200)  # 1% of crop size (0.5% random)
         x_shift = np.random.randint(-shift_expr, shift_expr)
         y_shift = np.random.randint(-shift_expr, shift_expr)
 
@@ -214,12 +209,12 @@ def worker(path, opt):
         for y in w_space:
             index += 1
 
-            if (x + x_shift) > 0 and (x+ x_shift) + crop_size < h:
+            if (x + x_shift) > 0 and (x + x_shift) + crop_size < h:
                 x += x_shift
-            if (y + y_shift) > 0 and (y+ y_shift) + crop_size < w:
+            if (y + y_shift) > 0 and (y + y_shift) + crop_size < w:
                 y += y_shift
 
-            cropped_img = img[x : x + crop_size, y : y + crop_size, ...]
+            cropped_img = img[x:x + crop_size, y:y + crop_size, ...]
             cropped_img = np.ascontiguousarray(cropped_img)
 
             cv2.imwrite(

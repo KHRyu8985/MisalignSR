@@ -118,9 +118,7 @@ def worker(path, opt):
     img_name, extension = osp.splitext(osp.basename(path))
 
     # remove the x2, x3, x4 and x8 in the filename for ZOOM
-    img_name = (
-        img_name.replace('x2', '').replace('x3', '').replace('x4', '').replace('x8', '')
-    )
+    img_name = (img_name.replace('x2', '').replace('x3', '').replace('x4', '').replace('x8', ''))
 
     img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
 
