@@ -1,3 +1,4 @@
+import torch
 from torch import nn as nn
 from torch.nn import functional as F
 from torch.nn.utils import spectral_norm
@@ -20,7 +21,7 @@ class SimpleMWNet(nn.Module):
         return sigmoid(out)
 
 @ARCH_REGISTRY.register()
-class UNetDiscriminatorSN(nn.Module):
+class UNetDiscriminator_SN(nn.Module):
     """Defines a U-Net discriminator with spectral normalization (SN)
 
     It is used in Real-ESRGAN: Training Real-World Blind Super-Resolution with Pure Synthetic Data.
@@ -32,7 +33,7 @@ class UNetDiscriminatorSN(nn.Module):
     """
 
     def __init__(self, num_in_ch, num_feat=64, skip_connection=True):
-        super(UNetDiscriminatorSN, self).__init__()
+        super(UNetDiscriminator_SN, self).__init__()
         self.skip_connection = skip_connection
         norm = spectral_norm
         # the first convolution
@@ -78,6 +79,6 @@ class UNetDiscriminatorSN(nn.Module):
         out = F.leaky_relu(self.conv7(x6), negative_slope=0.2, inplace=True)
         out = F.leaky_relu(self.conv8(out), negative_slope=0.2, inplace=True)
         out = self.conv9(out)
-        out = F.sigmoid(out)
-
+        out = torch.sigmoid(out)
+        out = out / out.mean()
         return out

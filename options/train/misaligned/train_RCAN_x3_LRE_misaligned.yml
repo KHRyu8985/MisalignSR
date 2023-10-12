@@ -60,6 +60,7 @@ path:
 # training settings
 train:
   ema_decay: 0.999
+  weight_vis: True
   optim_g:
     type: Adam
     lr: !!float 1e-4

@@ -4,14 +4,14 @@ from collections import OrderedDict
 from os import path as osp
 from tqdm import tqdm
 
-from basicsr.utils import get_root_logger
+from basicsr.utils import get_root_logger, tensor2img, imwrite
 from basicsr.archs import build_network
 from basicsr.losses import build_loss
 from basicsr.utils.registry import MODEL_REGISTRY
 from basicsr.models.sr_model import SRModel
-
 import higher
-
+import numpy as np
+from misalignSR.losses.basic_loss import GradientLoss
 
 @MODEL_REGISTRY.register()
 class MWNSRModel(SRModel):
@@ -21,9 +21,16 @@ class MWNSRModel(SRModel):
 
     def init_training_settings(self):
         train_opt = self.opt["train"]
+        self.weight_vis = train_opt.get("weight_vis", True)
+
+        if self.weight_vis:
+            logger = get_root_logger()
+            logger.info("Visualize weights")
+        else:
+            logger = get_root_logger()
+
         self.ema_decay = train_opt.get("ema_decay", 0)
         if self.ema_decay > 0:
-            logger = get_root_logger()
             logger.info(f"Use Exponential Moving Average with decay: {self.ema_decay}")
             # define network net_g with Exponential Moving Average (EMA)
             # net_g_ema is used only for testing on one GPU and saving
@@ -74,10 +81,7 @@ class MWNSRModel(SRModel):
         else:
             self.cri_perceptual = None
 
-        if (
-            self.cri_pix is None
-            and self.cri_perceptual is None
-        ):
+        if self.cri_pix is None and self.cri_perceptual is None:
             raise ValueError("All losses are None. Please check.")
 
         self.setup_optimizers()
@@ -107,44 +111,67 @@ class MWNSRModel(SRModel):
             self.meta_lq = data["meta_lq"].to(self.device)
             self.meta_gt = data["meta_gt"].to(self.device)
 
-    def determine_meta_weight(self):
-        loss_func = torch.nn.L1Loss(reduction="none")
-        inner_opt = torch.optim.SGD(
-            self.net_g.parameters(), lr=1e-4
-        )  # SGD for inner loop
+    def determine_meta_weight(self, current_iter):
 
-        with higher.innerloop_ctx(self.net_g, inner_opt, copy_initial_weights=True) as (
-            fnet,
-            diffopt,
-        ):
-            # 1. Update meta model on training data
-            output = fnet(self.lq)
-            meta_train_loss = loss_func(output, self.gt)
-            v_lambda = self.net_v(meta_train_loss.data)
+        if current_iter % 10 == 0:
+            # update meta model
+            loss_func = GradientLoss(reduction="none").to(self.device)
+            inner_opt = torch.optim.SGD(
+                self.net_g.parameters(), lr=1e-4
+            )  # SGD for inner loop
 
-            meta_loss = torch.mean(meta_train_loss * v_lambda)
-            diffopt.step(meta_loss)
+            with higher.innerloop_ctx(self.net_g, inner_opt, copy_initial_weights=True) as (
+                fnet,
+                diffopt,
+            ):
+                # 1. Update meta model on training data
+                output = fnet(self.lq)
+                meta_train_loss = loss_func(output, self.gt)
+                out = torch.cat([output.data, self.gt.data], dim=1)
+                v_lambda = self.net_v(out)
 
-            # 2. Update meta model on validation data
-            meta_val_loss = loss_func(fnet(self.meta_lq), self.meta_gt)
-            meta_val_loss = torch.mean(meta_val_loss)
-            self.optimizer_meta_g.zero_grad()
-            meta_val_loss.backward()
-            self.optimizer_meta_g.step()
+                meta_loss = torch.mean(meta_train_loss * v_lambda)
+                diffopt.step(meta_loss)
 
-        final_yhat = self.net_g(self.lq)
+                # 2. Update meta model on validation data
+                meta_val_loss = loss_func(fnet(self.meta_lq), self.meta_gt)
+                meta_val_loss = torch.mean(meta_val_loss)
+                self.optimizer_meta_g.zero_grad()
+                meta_val_loss.backward()
+                self.optimizer_meta_g.step()
+
         with torch.no_grad():
-            w_new = self.net_v(loss_func(final_yhat, self.gt).data)
+            final_yhat = self.net_g(self.lq)
+            out = torch.cat([final_yhat.data, self.gt.data], dim=1)
+            w_new = self.net_v(out)
 
         return w_new
 
     def optimize_parameters(self, current_iter):
         self.optimizer_g.zero_grad()
-        if current_iter > 10000:
-            weights = self.determine_meta_weight()
+        if current_iter > -1:
+            weights = self.determine_meta_weight(current_iter)
         else:
             weights = 1.0
         self.output = self.net_g(self.lq)
+
+        # visualize weight and lq and gt images --> log images to tensorboard
+        if self.weight_vis and current_iter % 1000 == 1:
+            logger = get_root_logger()
+            logger.info(f"Visualize weights at iteration {current_iter}")
+            logger.info(f"weight is Mean: {weights.mean()}, STD: {weights.std()}")
+
+            w = tensor2img(weights.detach().cpu())
+
+            o = tensor2img(self.output.detach().cpu())
+            g = tensor2img(self.gt.detach().cpu())
+            i = np.concatenate((o, w, g), axis=1)
+
+            save_img_path = osp.join(
+                self.opt["path"]["visualization"], "weights", f"{current_iter}.png"
+            )
+
+            imwrite(i, save_img_path)
 
         l_total = 0
         loss_dict = OrderedDict()
@@ -172,20 +199,20 @@ class MWNSRModel(SRModel):
             self.model_ema(decay=self.ema_decay)
 
     def get_optimizer(self, optim_type, params, lr, **kwargs):
-        if optim_type == 'Adam':
+        if optim_type == "Adam":
             optimizer = torch.optim.Adam(params, lr, **kwargs)
-        elif optim_type == 'AdamW':
+        elif optim_type == "AdamW":
             optimizer = torch.optim.AdamW(params, lr, **kwargs)
-        elif optim_type == 'Adamax':
+        elif optim_type == "Adamax":
             optimizer = torch.optim.Adamax(params, lr, **kwargs)
-        elif optim_type == 'SGD':
+        elif optim_type == "SGD":
             optimizer = torch.optim.SGD(params, lr, **kwargs)
-        elif optim_type == 'ASGD':
+        elif optim_type == "ASGD":
             optimizer = torch.optim.ASGD(params, lr, **kwargs)
-        elif optim_type == 'RMSprop':
+        elif optim_type == "RMSprop":
             optimizer = torch.optim.RMSprop(params, lr, **kwargs)
-        elif optim_type == 'Rprop':
+        elif optim_type == "Rprop":
             optimizer = torch.optim.Rprop(params, lr, **kwargs)
         else:
-            raise NotImplementedError(f'optimizer {optim_type} is not supported yet.')
+            raise NotImplementedError(f"optimizer {optim_type} is not supported yet.")
         return optimizer
