@@ -22,6 +22,15 @@ class LRESRModel(SRModel):
     def __init__(self, opt):
         super(SRModel, self).__init__(opt)
         self.weight_vis = self.opt["train"].get("weight_vis", True)
+
+        self.meta_loss_type = self.opt["train"].get("meta_loss", None) # if True then use GDL, else use L1
+        self.start_meta = self.opt["train"].get("start_meta", None)
+
+        if self.meta_loss_type is None:
+            self.meta_loss_type = 'GDL' # Default to GDL
+        if self.start_meta is None:
+            self.start_meta = -1
+
         # define network
         self.net_g = build_network(opt["network_g"])
         self.net_g = self.model_to_device(self.net_g)
@@ -51,7 +60,11 @@ class LRESRModel(SRModel):
             self.meta_gt = data["meta_gt"].to(self.device)
 
     def determine_meta_weight(self):
-        loss_func = GradientLoss(reduction="none").to(self.device)
+
+        if self.meta_loss_type == 'GDL':
+            loss_func = GradientLoss(reduction="none").to(self.device)
+        else:
+            loss_func = torch.nn.L1Loss(reduction="none").to(self.device)
 
         with higher.innerloop_ctx(
             self.net_g, self.optimizer_g, copy_initial_weights=True
@@ -85,16 +98,18 @@ class LRESRModel(SRModel):
 
     def optimize_parameters(self, current_iter):
         self.optimizer_g.zero_grad()
-        if current_iter > -1:
+
+        if current_iter > self.start_meta:
             weights = self.determine_meta_weight()
         else:
             weights = 1.0
         self.output = self.net_g(self.lq)
 
-        if self.weight_vis and current_iter % 1000 == 1:
+        if self.weight_vis and current_iter % 5000 == 1 and current_iter > self.start_meta:
             logger = get_root_logger()
             logger.info(f"Visualize weights at iteration {current_iter}")
             logger.info(f"weight is Mean: {weights.mean()}, STD: {weights.std()}")
+            logger.info(f"Loss type is {self.meta_loss_type}")
 
             w = tensor2img(weights.detach().cpu())
             o = tensor2img(self.output.detach().cpu())

@@ -6,6 +6,7 @@ tb_logger/*
 flagged/*
 wandb/*
 tmp/*
+.github/*
 
 *.DS_Store
 
