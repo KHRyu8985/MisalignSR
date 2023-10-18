@@ -19,7 +19,7 @@ from basicsr.utils.registry import DATASET_REGISTRY
 class PairedBorderMetaImageDataset(data.Dataset):
     def __init__(self, opt):
         super(PairedBorderMetaImageDataset, self).__init__()
-        self.border = 5  # added border
+        self.border = 10  # added border
         self.opt = opt
         # file client (io backend)
         self.file_client = None
