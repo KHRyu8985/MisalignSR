@@ -449,16 +449,12 @@ class AlignFormer(nn.Module):
     ):
         super().__init__()
 
-        if flow_type == 'spynet':
-            from alignformer.archs.spynet_arch import FlowGenerator
-
-            self.flow_estimator = FlowGenerator(load_path=kwargs['flow_model_path'])
-        elif flow_type == 'pwc':
-            from alignformer.archs.pwcnet_arch import FlowGenerator
+        if flow_type == 'pwc':
+            from misalignSR.archs.pwcnet_arch import FlowGenerator
 
             self.flow_estimator = FlowGenerator(path=kwargs['flow_model_path'])
         elif flow_type == 'raft':
-            from alignformer.archs.raft_arch import FlowGenerator
+            from misalignSR.archs.raft_arch import FlowGenerator
 
             self.flow_estimator = FlowGenerator(
                 load_path=kwargs['flow_model_path'], requires_grad=kwargs['flow_ft']
@@ -469,7 +465,7 @@ class AlignFormer(nn.Module):
         # Define DAM.
         if kwargs['dam_ft']:
             assert kwargs['dam_path'] != None
-        from alignformer.archs.dam_arch import DAModule
+        from misalignSR.archs.dam_arch import DAModule
 
         self.DAM = DAModule(
             in_ch=src_ch,

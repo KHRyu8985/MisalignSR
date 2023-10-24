@@ -1,118 +1,119 @@
 # general settings
-name: RCANx3_scratch_DIV2K_MWNet_misaligned_work
-model_type: MWNSRModel
+name: AlignFormer_train
+folder_suffix: AlignFormer
+model_type: TTSRModel
 scale: 3
-num_gpu: 1  # set num_gpu: 0 for cpu mode
-manual_seed: 0
+num_gpu: 1
+manual_seed: 10
 
 # dataset and data loader settings
 datasets:
   train:
     name: DIV2K
-    type: PairedMetaImageDataset
+    type: TripleImageDataset
     dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub_misaligned
+    dataroot_ref: datasets/DIV2K/DIV2K_train_HR_sub_misaligned
     dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X3_sub
-    dataroot_meta_gt: datasets/DIV2K/DIV2K_meta_HR_sub
-    dataroot_meta_lq: datasets/DIV2K/DIV2K_meta_LR_bicubic/X3_sub
+    meta_info_file: ~
+    filename_tmpl: '{}'
     io_backend:
       type: disk
-    gt_size: 120
-    use_hflip: true
+
+    gt_size: 240
+    use_flip: true
     use_rot: true
 
     # data loader
     use_shuffle: true
-    num_worker_per_gpu: 3
-    batch_size_per_gpu: 16
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 1
     dataset_enlarge_ratio: 10
     prefetch_mode: ~
+
   val:
     name: DIV2K
-    type: PairedImageDataset
+    type: TripleImageDataset
     dataroot_gt: datasets/DIV2K/DIV2K_valid_HR_sub
+    dataroot_ref: datasets/DIV2K/DIV2K_valid_HR_sub
     dataroot_lq: datasets/DIV2K/DIV2K_valid_LR_bicubic/X3_sub
+    filename_tmpl: '{}'
     io_backend:
       type: disk
 
 # network structures
 network_g:
-  type: RCAN
-  num_in_ch: 3
-  num_out_ch: 3
-  num_feat: 64
-  num_group: 10
-  num_block: 15
-  squeeze_factor: 16
-  upscale: 3
-  res_scale: 1
-  img_range: 255.
-  rgb_mean: [0.4488, 0.4371, 0.4040]
+  type: AlignFormer
+  feat_dim: 16
+  nhead: 3
+  mlp_ratio: 2
+  pos_en_flag: false
+  k_size: 5
+  attn_type: softmax
+  flow_type: raft
+  flow_model_path: weights/RAFT/raft-things.pth
+  flow_ft: false
+  # DA module
+  dam_flag: true
+  dam_ft: false
+  dam_feat: 64
+  dam_demodulate: true
+  dam_path: experiments/DAM_DIV2K_CTX_misaligned_COBI/models/net_g_100000.pth
+  # main branch
+  main_ft: true
 
-network_mwn:
-  type: UNetDiscriminator_SN
-  num_in_ch: 6
-  num_feat: 32
 
 # path
 path:
   pretrain_network_g: ~
-  strict_load_g: False
+  strict_load_g: true
   resume_state: ~
-  pretrain_network_v: ~
-  strict_load_v: False
 
 # training settings
 train:
   ema_decay: 0.999
-  weight_vis: True
   optim_g:
     type: Adam
-    lr: !!float 1e-4
+    lr: !!float 2e-4
     weight_decay: 0
     betas: [0.9, 0.99]
 
-  optim_meta_g:
-    type: SGD
-    lr: !!float 3e-3
-    momentum: 0.9
-    nesterov: True
-    weight_decay: !!float 1e-4
-
   scheduler:
     type: MultiStepLR
-    milestones: [200000]
+    milestones: [250000, 300000]
     gamma: 0.5
 
-  total_iter: 300000
+  total_iter: 400000
   warmup_iter: -1  # no warm up
 
   # losses
   pixel_opt:
-    type: L1Loss
-    loss_weight: 1.0
+    type: CoBiLoss
+    band_width: !!float 0.5
+    vgg_layer: conv4_4
+    loss_type: cosine
+    loss_weight: !!float 1.0
     reduction: mean
 
+# validation settings
 val:
-  val_freq: !!float 5e3
-  save_img: True
+  val_freq: !!float 1e4
+  save_img: true
 
   metrics:
     psnr: # metric name, can be arbitrary
       type: calculate_psnr
-      crop_border: 4
+      crop_border: 0
       test_y_channel: false
 
     ssim: # metric name, can be arbitrary
         type: calculate_ssim
         crop_border: 4
         test_y_channel: false
-
-
 # logging settings
 logger:
   print_freq: 100
-  save_checkpoint_freq: !!float 5e3
-  use_tb_logger: True
+  save_checkpoint_freq: !!float 1e4
+  use_tb_logger: true
   wandb:
     project: ~
     resume_id: ~
@@ -120,4 +121,4 @@ logger:
 # dist training settings
 dist_params:
   backend: nccl
-  port: 29500
+  port: 29165

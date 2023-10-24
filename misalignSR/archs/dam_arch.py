@@ -204,7 +204,7 @@ class Blur(nn.Module):
         self.pad = pad
 
     def forward(self, x):
-        return upfirdn2d(x, self.kernel, pad=self.pad)
+        return upfirdn2d(x, self.kernel, padding=self.pad)
 
 
 def _make_kernel(k):

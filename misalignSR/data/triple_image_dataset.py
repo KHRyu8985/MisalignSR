@@ -5,7 +5,7 @@ from torch.utils import data as data
 from torchvision.transforms.functional import normalize
 
 from misalignSR.data.data_util import (multiple_paths_from_meta_info_file,
-                                    multiple_paths_from_folder)
+                                       multiple_paths_from_folder)
 from misalignSR.data.transforms import augment, multiple_random_crop
 from basicsr.utils import FileClient, imfrombytes, img2tensor
 from basicsr.utils.registry import DATASET_REGISTRY

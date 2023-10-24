@@ -8,8 +8,7 @@ from basicsr.data.data_util import (
 )
 from basicsr.data.transforms import (
     augment,
-    paired_random_crop,
-    paired_random_crop_with_border,
+    paired_random_crop
 )
 from basicsr.utils import FileClient, bgr2ycbcr, imfrombytes, img2tensor
 from basicsr.utils.registry import DATASET_REGISTRY

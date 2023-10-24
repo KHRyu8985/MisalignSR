@@ -1,4 +1,4 @@
-from utils import find_kernel, filtering
+from KernelGAN.util import find_kernel, filtering
 import matplotlib.image as img
 import matplotlib.pyplot as plt
 from basicsr.utils import img2tensor, tensor2img
