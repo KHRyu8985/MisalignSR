@@ -5,7 +5,6 @@ import sys
 from multiprocessing import Pool
 from os import path as osp
 from tqdm import tqdm
-
 from alignformer.utils import scandir
 
 
@@ -46,21 +45,28 @@ def main():
     # HR images
     opt['input_folder'] = 'datasets/DIV2K/DIV2K_valid_HR'
     opt['save_folder'] = 'datasets/DIV2K/DIV2K_valid_HR_sub'
+    opt['crop_size'] = 1200
+
     extract_subimages(opt)
 
     # LRx2 images
     opt['input_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X2'
     opt['save_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X2_sub'
+    opt['crop_size'] = 600
+
     extract_subimages(opt)
 
     # LRx3 images
     opt['input_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X3'
     opt['save_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X3_sub'
+    opt['crop_size'] = 400
+
     extract_subimages(opt)
 
     # LRx4 images
     opt['input_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X4'
     opt['save_folder'] = 'datasets/DIV2K/DIV2K_valid_LR_bicubic/X4_sub'
+    opt['crop_size'] = 300
     extract_subimages(opt)
 
 
@@ -75,6 +81,8 @@ def extract_subimages(opt):
     """
     input_folder = opt['input_folder']
     save_folder = opt['save_folder']
+    crop_size = opt['crop_size']
+
     if not osp.exists(save_folder):
         os.makedirs(save_folder)
         print(f'mkdir {save_folder} ...')
@@ -109,7 +117,7 @@ def worker(path, opt):
     Returns:
         process_info (str): Process information displayed in progress bar.
     """
-
+    crop_size = opt['crop_size']
     img_name, extension = osp.splitext(osp.basename(path))
 
     # remove the x2, x3, x4 and x8 in the filename for DIV2K
@@ -118,6 +126,11 @@ def worker(path, opt):
     )
 
     img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+    h, w = img.shape[0:2]
+
+    # Crop the image to subimages
+
+    img = img[0:crop_size, 0:crop_size]
 
     cv2.imwrite(
         osp.join(opt['save_folder'], f'{img_name}{extension}'), img,

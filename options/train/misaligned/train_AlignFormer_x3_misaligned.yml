@@ -26,7 +26,7 @@ datasets:
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 4
-    batch_size_per_gpu: 1
+    batch_size_per_gpu: 4
     dataset_enlarge_ratio: 10
     prefetch_mode: ~
 
@@ -43,8 +43,8 @@ datasets:
 # network structures
 network_g:
   type: AlignFormer
-  feat_dim: 16
-  nhead: 3
+  feat_dim: 64
+  nhead: 4
   mlp_ratio: 2
   pos_en_flag: false
   k_size: 5
@@ -57,7 +57,7 @@ network_g:
   dam_ft: false
   dam_feat: 64
   dam_demodulate: true
-  dam_path: experiments/DAM_DIV2K_CTX_misaligned_COBI/models/net_g_100000.pth
+  dam_path: experiments/DAM_DIV2K_CTX_misaligned/models/net_g_100000.pth
   # main branch
   main_ft: true
 
@@ -70,7 +70,7 @@ path:
 
 # training settings
 train:
-  ema_decay: 0.999
+  ema_decay: 0
   optim_g:
     type: Adam
     lr: !!float 2e-4
@@ -87,7 +87,7 @@ train:
 
   # losses
   pixel_opt:
-    type: CoBiLoss
+    type: ContextualLoss
     band_width: !!float 0.5
     vgg_layer: conv4_4
     loss_type: cosine

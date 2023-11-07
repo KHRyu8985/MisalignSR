@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "--base_folder", "/home/kanghyun/MisalignSR/datasets/Zoom-to-Learn/train/train",
+                "--num", "7"
+            ]
+        }
+    ]
+}

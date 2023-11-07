@@ -1,17 +1,17 @@
 # general settings
-name: RCANx2_scratch_ZOOM_misaligned
+name: RCANx3_scratch_ZOOM_misaligned
 model_type: SRModel
-scale: 2
+scale: 4
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
 # dataset and data loader settings
 datasets:
   train:
-    name: ZOOM
-    type: PairedImageDataset
-    dataroot_gt: datasets/ZOOM/ZOOM_train_HR_sub
-    dataroot_lq: datasets/ZOOM/ZOOM_train_LR_real/X2_sub
+    name: DIV2K
+    type: PairedImageDataset_v2
+    dataroot_gt: datasets/ZOOM/train/HR_sub
+    dataroot_lq: datasets/ZOOM/train/LR/x4_sub
     io_backend:
       type: disk
 
@@ -27,10 +27,10 @@ datasets:
     prefetch_mode: ~
 
   val:
-    name: ZOOM
-    type: PairedImageDataset
-    dataroot_gt: datasets/ZOOM/ZOOM_valid_HR_sub
-    dataroot_lq: datasets/ZOOM/ZOOM_valid_LR_real/X2_sub
+    name: DIV2K
+    type: PairedImageDataset_v2
+    dataroot_gt: datasets/ZOOM/test/HR
+    dataroot_lq: datasets/ZOOM/test/LR/x4
     io_backend:
       type: disk
 
@@ -43,7 +43,7 @@ network_g:
   num_group: 10
   num_block: 15
   squeeze_factor: 16
-  upscale: 2
+  upscale: 4
   res_scale: 1
   img_range: 255.
   rgb_mean: [0.4488, 0.4371, 0.4040]
@@ -66,10 +66,10 @@ train:
 
   scheduler:
     type: MultiStepLR
-    milestones: [200000]
+    milestones: [100000]
     gamma: 0.5
 
-  total_iter: 300000
+  total_iter: 150000
   warmup_iter: -1  # no warm up
 
   # losses
@@ -80,7 +80,7 @@ train:
 
 val:
   val_freq: !!float 5e3
-  save_img: False
+  save_img: True
 
   metrics:
     psnr: # metric name, can be arbitrary

@@ -16,6 +16,12 @@ class TTSRModel(SRModel):
     """Base TTSR model for image restoration."""
 
     def feed_data(self, data):
+        if data['lq'].shape != data['gt'].shape:
+            data['ref'] = data['gt']
+            with torch.no_grad():
+                data['lq'] = torch.nn.functional.interpolate(
+                    data['lq'], size=data['ref'].shape[2:], mode='bilinear', align_corners=False)
+
         self.lq = data['lq'].to(self.device)
         if 'gt' in data:
             self.gt = data['gt'].to(self.device)
@@ -23,12 +29,6 @@ class TTSRModel(SRModel):
             self.ref = data['ref'].to(self.device)
         if 'mask' in data:
             self.mask = data['mask'].to(self.device)
-
-        if self.lq.shape != self.gt.shape:
-            self.ref = self.gt
-            # scale lq to ref size
-            self.lq = torch.nn.functional.interpolate(
-                self.lq, size=self.ref.shape[2:], mode='bilinear', align_corners=False)
 
     def init_training_settings(self):
         self.net_g.train()
