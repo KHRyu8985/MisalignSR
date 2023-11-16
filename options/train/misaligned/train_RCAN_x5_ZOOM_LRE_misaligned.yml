@@ -1,32 +1,22 @@
 # general settings
-name: RCANx4_scratch_ZOOM_LRE_misaligned
+name: RCANx5_scratch_ZOOM_LRE_misaligned
 model_type: LRESRModel
-scale: 4
+scale: 5
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
-
-# dataset and data loader settings
-datasets:
-  train:
-    name: ZOOM
-    type: PairedImageDataset_v2
-    dataroot_gt: datasets/ZOOM/train/HR_sub
-    dataroot_lq: datasets/ZOOM/train/LR/x4_sub
-    io_backend:
-      type: disk
 
 datasets:
   train:
     name: ZOOM
     type: PairedMetaImageDataset
     dataroot_gt: datasets/ZOOM/train/HR_sub
-    dataroot_lq: datasets/ZOOM/train/LR/x4_sub
-    dataroot_meta_gt: datasets/ZOOM/train/HR_meta/x4
-    dataroot_meta_lq: datasets/ZOOM/train/LR_meta/x4
+    dataroot_lq: datasets/ZOOM/train/LR/x5_sub
+    dataroot_meta_gt: datasets/ZOOM/train/HR_meta/x5
+    dataroot_meta_lq: datasets/ZOOM/train/LR_meta/x5
     io_backend:
       type: disk
 
-    gt_size: 120
+    gt_size: 125
     use_hflip: true
     use_rot: true
 
@@ -41,7 +31,7 @@ datasets:
     name: ZOOM
     type: PairedImageDataset
     dataroot_gt: datasets/ZOOM/test/HR
-    dataroot_lq: datasets/ZOOM/test/LR/x4
+    dataroot_lq: datasets/ZOOM/test/LR/x5
     io_backend:
       type: disk
 
@@ -54,7 +44,7 @@ network_g:
   num_group: 10
   num_block: 15
   squeeze_factor: 16
-  upscale: 4
+  upscale: 5
   res_scale: 1
   img_range: 255.
   rgb_mean: [0.4488, 0.4371, 0.4040]

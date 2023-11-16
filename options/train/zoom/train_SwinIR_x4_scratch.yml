@@ -1,7 +1,7 @@
 # general settings
-name: RCANx4_scratch_ZOOM_LRE_misaligned
-model_type: LRESRModel
-scale: 4
+name: SwinIR_x4_ZOOM_scratch
+model_type: SwinIRModel
+scale: 1
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
@@ -9,55 +9,44 @@ manual_seed: 0
 datasets:
   train:
     name: ZOOM
-    type: PairedImageDataset_v2
+    type: PairedImageDataset
     dataroot_gt: datasets/ZOOM/train/HR_sub
-    dataroot_lq: datasets/ZOOM/train/LR/x4_sub
+    dataroot_lq: datasets/ZOOM/train/LR/4_sub
     io_backend:
       type: disk
 
-datasets:
-  train:
-    name: ZOOM
-    type: PairedMetaImageDataset
-    dataroot_gt: datasets/ZOOM/train/HR_sub
-    dataroot_lq: datasets/ZOOM/train/LR/x4_sub
-    dataroot_meta_gt: datasets/ZOOM/train/HR_meta/x4
-    dataroot_meta_lq: datasets/ZOOM/train/LR_meta/x4
-    io_backend:
-      type: disk
-
-    gt_size: 120
+    gt_size: 64
     use_hflip: true
     use_rot: true
 
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 3
-    batch_size_per_gpu: 16
-    dataset_enlarge_ratio: 10
+    batch_size_per_gpu: 8
+    dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
   val:
     name: ZOOM
     type: PairedImageDataset
-    dataroot_gt: datasets/ZOOM/test/HR
-    dataroot_lq: datasets/ZOOM/test/LR/x4
+    dataroot_gt: datasets/ZOOM/test/HR_sub
+    dataroot_lq: datasets/ZOOM/test/LR/4_sub
     io_backend:
       type: disk
 
 # network structures
 network_g:
-  type: RCAN
-  num_in_ch: 3
-  num_out_ch: 3
-  num_feat: 64
-  num_group: 10
-  num_block: 15
-  squeeze_factor: 16
-  upscale: 4
-  res_scale: 1
+  type: SwinIR
+  upscale: 1
+  in_chans: 3
+  img_size: 64
+  window_size: 8
   img_range: 255.
-  rgb_mean: [0.4488, 0.4371, 0.4040]
+  depths: [6, 6, 6, 6]
+  embed_dim: 180
+  num_heads: [6, 6, 6, 6]
+  mlp_ratio: 2
+  resi_connection: '1conv'
 
 
 # path
@@ -69,10 +58,6 @@ path:
 # training settings
 train:
   ema_decay: 0.999
-  weight_vis: True
-  start_meta: 5000 # start meta learning (LRE) after 10000 iterations
-  meta_loss: L1
-
   optim_g:
     type: Adam
     lr: !!float 1e-4

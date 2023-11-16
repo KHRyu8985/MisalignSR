@@ -1,6 +1,6 @@
 # general settings
-name: RCANx4_scratch_ZOOM_LRE_misaligned
-model_type: LRESRModel
+name: DAM_x4_ZOOM
+model_type: TTSRModel
 scale: 4
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
@@ -8,57 +8,42 @@ manual_seed: 0
 # dataset and data loader settings
 datasets:
   train:
-    name: ZOOM
-    type: PairedImageDataset_v2
+    name: DIV2K
+    type: TripleImageDataset
     dataroot_gt: datasets/ZOOM/train/HR_sub
+    dataroot_ref: datasets/ZOOM/train/HR_sub
     dataroot_lq: datasets/ZOOM/train/LR/x4_sub
     io_backend:
       type: disk
 
-datasets:
-  train:
-    name: ZOOM
-    type: PairedMetaImageDataset
-    dataroot_gt: datasets/ZOOM/train/HR_sub
-    dataroot_lq: datasets/ZOOM/train/LR/x4_sub
-    dataroot_meta_gt: datasets/ZOOM/train/HR_meta/x4
-    dataroot_meta_lq: datasets/ZOOM/train/LR_meta/x4
-    io_backend:
-      type: disk
-
-    gt_size: 120
-    use_hflip: true
+    gt_size: 240
+    use_flip: true
     use_rot: true
 
     # data loader
     use_shuffle: true
-    num_worker_per_gpu: 3
-    batch_size_per_gpu: 16
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 4
     dataset_enlarge_ratio: 10
     prefetch_mode: ~
 
   val:
-    name: ZOOM
-    type: PairedImageDataset
+    name: DIV2K
+    type: TripleImageDataset
     dataroot_gt: datasets/ZOOM/test/HR
+    dataroot_ref: datasets/ZOOM/test/HR
     dataroot_lq: datasets/ZOOM/test/LR/x4
     io_backend:
       type: disk
 
 # network structures
 network_g:
-  type: RCAN
-  num_in_ch: 3
-  num_out_ch: 3
-  num_feat: 64
-  num_group: 10
-  num_block: 15
-  squeeze_factor: 16
-  upscale: 4
-  res_scale: 1
-  img_range: 255.
-  rgb_mean: [0.4488, 0.4371, 0.4040]
-
+  type: DAModule
+  in_ch: 3
+  feat_ch: 64
+  out_ch: 3
+  demodulate: true
+  requires_grad: true
 
 # path
 path:
@@ -69,10 +54,6 @@ path:
 # training settings
 train:
   ema_decay: 0.999
-  weight_vis: True
-  start_meta: 5000 # start meta learning (LRE) after 10000 iterations
-  meta_loss: L1
-
   optim_g:
     type: Adam
     lr: !!float 1e-4
@@ -81,20 +62,23 @@ train:
 
   scheduler:
     type: MultiStepLR
-    milestones: [100000]
+    milestones: [250000, 400000, 450000, 475000]
     gamma: 0.5
 
-  total_iter: 150000
+  total_iter: 500000
   warmup_iter: -1  # no warm up
 
   # losses
   pixel_opt:
-    type: L1Loss
-    loss_weight: 1.0
+    type: ContextualLoss
+    band_width: !!float 0.5
+    vgg_layer: conv4_4
+    loss_type: cosine
+    loss_weight: !!float 1.0
     reduction: mean
 
 val:
-  val_freq: !!float 5e3
+  val_freq: !!float 1e4
   save_img: True
 
   metrics:
@@ -107,7 +91,6 @@ val:
         type: calculate_ssim
         crop_border: 4
         test_y_channel: false
-
 
 # logging settings
 logger:

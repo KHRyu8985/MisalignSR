@@ -10,3 +10,4 @@ pyrootutils # root directory finding
 scikit-learn # machine learning
 voila # jupyter notebook to web app
 cupy-cuda11x # gpu computing
+cpbd

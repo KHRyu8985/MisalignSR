@@ -14,6 +14,10 @@ import rawpy
 from PIL import Image
 import scipy.stats as stats
 
+
+import numpy as np
+import cv2
+
 # Local Vars
 FOCAL_CODE = 37386
 ORIEN_CODE = 274
@@ -471,83 +475,6 @@ def get_transformed_corner(tform, h, w):
     return tformed
 
 
-def local_alignment(im_moving, im_target):
-    """_summary_
-
-    Args:
-        im_moving (_type_): HR image
-        im_target (_type_): LR image (#7)
-
-    Returns:
-        im_reg
-    """
-    hr_height, hr_width = im_moving.shape[0], im_moving.shape[1]
-    lr_height, lr_width = im_target.shape[0], im_target.shape[1]
-
-    # convert color image to grayscale
-    target = cv2.cvtColor(im_target, cv2.COLOR_BGR2GRAY)
-    source = cv2.cvtColor(im_moving, cv2.COLOR_BGR2GRAY)
-
-    # initiate SIFT detector
-    sift = cv2.SIFT_create()
-    # find the keypoints and descriptors with SIFT
-    kp_tar, des_tar = sift.detectAndCompute(target, None)
-    kp_src, des_src = sift.detectAndCompute(source, None)
-
-    # find matched key points
-    FLANN_INDEX_KDTREE = 0
-    MIN_MATCH_COUNT = 100
-    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-    search_params = dict(checks=50)
-    flann = cv2.FlannBasedMatcher(index_params, search_params)
-    matches = flann.knnMatch(des_tar, des_src, k=2)
-
-    # store all the good matches as per Lowe's ratio test.
-    accept = [m for m, n in matches if m.distance < 0.7 * n.distance]
-
-    if len(accept) > MIN_MATCH_COUNT:
-        dst_pts = np.float32([kp_tar[m.queryIdx].pt for m in accept]).reshape(-1, 1, 2)
-        src_pts = np.float32([kp_src[m.trainIdx].pt for m in accept]).reshape(-1, 1, 2)
-        transform, _ = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
-
-        # Fov match for JPG image.
-        hr_coners = np.float32(
-            [
-                [0, 0],
-                [0, lr_height - 1],
-                [lr_width - 1, lr_height - 1],
-                [lr_width - 1, 0],
-            ]
-        ).reshape(-1, 1, 2)
-        hr_coners = cv2.perspectiveTransform(hr_coners, transform)
-
-        hr_transform = cv2.getPerspectiveTransform(
-            hr_coners.reshape(4, 2),
-            np.float32(
-                [
-                    [0, 0],
-                    [0, hr_height - 1],
-                    [hr_width - 1, hr_height - 1],
-                    [hr_width - 1, 0],
-                ]
-            ),
-        )
-
-        im_reg = cv2.warpPerspective(
-            im_moving,
-            hr_transform,
-            (hr_width, hr_height),
-            cv2.INTER_LINEAR,
-            borderMode=cv2.BORDER_CONSTANT,
-            borderValue=(0, 0, 0),
-        )
-
-        im_reg_cropped = crop_borders(im_reg, 10)
-        im_target_cropped = crop_borders(im_target, 10)
-
-        return im_reg_cropped, im_target_cropped
-
-
 def get_ccorr_normed(
     image: np.ndarray, target: np.ndarray, interpolation=cv2.INTER_CUBIC
 ) -> float:
@@ -579,6 +506,49 @@ def crop_borders(image, percent=5):
     return image[h_crop:h - h_crop, w_crop:w - w_crop]
 
 
+def local_alignment_ecc(im_movings, im_target):
+    registered_images = []
+    lr_height, lr_width = im_target.shape[0], im_target.shape[1]
+
+    # Convert the target image to grayscale
+    target = cv2.cvtColor(im_target, cv2.COLOR_BGR2GRAY)
+
+    for im_moving in im_movings:
+        # Convert the moving image to grayscale
+        source = cv2.cvtColor(im_moving, cv2.COLOR_BGR2GRAY)
+        # Define the downsizing factor
+        downsize_factor = 0.25  # Example: downsize to 50% of the original size
+
+        # Downsize the target and source images
+        target_ds = cv2.resize(target, None, fx=downsize_factor, fy=downsize_factor, interpolation=cv2.INTER_AREA)
+        source_ds = cv2.resize(source, None, fx=downsize_factor, fy=downsize_factor, interpolation=cv2.INTER_AREA)
+
+        # Initialize the transformation matrix to identity
+        warp_matrix = np.eye(2, 3, dtype=np.float32)
+
+        # Specify the number of iterations and termination criteria
+        number_of_iterations = 500
+        termination_eps = 1e-6
+        criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations, termination_eps)
+
+        # Run the ECC algorithm to find the transformation matrix on downsized images
+        _, warp_matrix = cv2.findTransformECC(target_ds, source_ds, warp_matrix, cv2.MOTION_AFFINE, criteria)
+
+        # Adjust the warp matrix to compensate for the downsizing
+        warp_matrix[0, 2] *= 1 / downsize_factor
+        warp_matrix[1, 2] *= 1 / downsize_factor
+
+        # Warp the original-sized moving image to align with the target image
+        im_reg = cv2.warpAffine(im_moving, warp_matrix, (lr_width, lr_height), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
+
+        registered_images.append(im_reg)
+
+    # Crop borders from registered images and target image
+    registered_images_cropped = [crop_borders(img, 8) for img in registered_images]
+    im_target_cropped = crop_borders(im_target, 8)
+
+    return registered_images_cropped, im_target_cropped
+
 def local_alignment(im_movings, im_target):
     registered_images = []
     lr_height, lr_width = im_target.shape[0], im_target.shape[1]
@@ -595,7 +565,7 @@ def local_alignment(im_movings, im_target):
 
         FLANN_INDEX_KDTREE = 0
         MIN_MATCH_COUNT = 100
-        index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+        index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=10)
         search_params = dict(checks=50)
         flann = cv2.FlannBasedMatcher(index_params, search_params)
         matches = flann.knnMatch(des_tar, des_src, k=2)
@@ -605,7 +575,7 @@ def local_alignment(im_movings, im_target):
         if len(accept) > MIN_MATCH_COUNT:
             dst_pts = np.float32([kp_tar[m.queryIdx].pt for m in accept]).reshape(-1, 1, 2)
             src_pts = np.float32([kp_src[m.trainIdx].pt for m in accept]).reshape(-1, 1, 2)
-            transform, _ = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
+            transform, _ = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 10.0)
 
             hr_corners = np.float32([[0, 0], [0, lr_height - 1], [lr_width - 1, lr_height - 1],
                                     [lr_width - 1, 0]]).reshape(-1, 1, 2)
@@ -620,7 +590,7 @@ def local_alignment(im_movings, im_target):
             registered_images.append(im_reg)
 
     # Crop borders from registered images and target image
-    registered_images_cropped = [crop_borders(img, 15) for img in registered_images]
-    im_target_cropped = crop_borders(im_target, 15)
+    registered_images_cropped = [crop_borders(img, 8) for img in registered_images]
+    im_target_cropped = crop_borders(im_target, 8)
 
     return registered_images_cropped, im_target_cropped

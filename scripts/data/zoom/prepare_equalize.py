@@ -8,18 +8,17 @@ def process_images(folder_name, base_folder, output_folder):
     normalized_path = os.path.join(base_folder, folder_name, 'normalized')
     images = sorted(os.listdir(normalized_path))
 
+    if len(images) < 6:
+        return
+
     # Assuming the first image is HR
     hr_image_path = os.path.join(normalized_path, images[0])
     image_hr = cv2.imread(hr_image_path)
     hr_h, hr_w, _ = image_hr.shape
 
-    # Check HR image size
-    if hr_h != 1984 or hr_w != 2968:
-        return
-
-    # Resize HR to be multiple of 490
-    new_hr_w = (hr_w // 490) * 490
-    new_hr_h = (hr_h // 490) * 490
+    # Resize HR to be multiple of 480
+    new_hr_w = (hr_w // 480) * 480
+    new_hr_h = (hr_h // 480) * 480
     image_hr_resized = cv2.resize(image_hr, (new_hr_w, new_hr_h), interpolation=cv2.INTER_AREA)
 
     # Save to HR directory
