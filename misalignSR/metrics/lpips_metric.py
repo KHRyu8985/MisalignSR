@@ -6,9 +6,8 @@ import torch
 
 from misalignSR.metrics.metric_util import reorder_image
 from misalignSR.utils import img2tensor
-from misalignSR.utils.registry import METRIC_REGISTRY
+from basicsr.utils.registry import METRIC_REGISTRY
 
-@METRIC_REGISTRY.register()
 def calculate_lpips(img1,
                     img2,
                     crop_border,

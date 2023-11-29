@@ -640,13 +640,14 @@ class RAFT(nn.Module):
         # run the feature network
         with autocast(enabled=self.args.mixed_precision):
             fmap1, fmap2 = self.fnet([image1, image2])
+            # fmap1 = BasicEncoder(images1) --> 1/8
 
         fmap1 = fmap1.float()
         fmap2 = fmap2.float()
         # if self.args.alternate_corr:
         #     corr_fn = AlternateCorrBlock(fmap1, fmap2, radius=self.args.corr_radius)
         # else:
-        corr_fn = CorrBlock(fmap1, fmap2, radius=self.args.corr_radius)
+        corr_fn = CorrBlock(fmap1, fmap2, radius=self.args.corr_radius) #corr_radius is 4
 
         # run the context network
         with autocast(enabled=self.args.mixed_precision):

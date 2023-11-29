@@ -3,8 +3,8 @@ import os
 from PIL import Image, ImageDraw
 
 # Define the directories for HR and LR images
-hr_image_dir = '/home/kanghyun/MisalignSR/datasets/Reflection_Removal/DSLR/unaligned_test50/transmission_layer'
-lr_image_dir = '/home/kanghyun/MisalignSR/datasets/Reflection_Removal/DSLR/unaligned_test50/blended'
+hr_image_dir = '/home/kanghyun/MisalignSR/datasets/ZOOM/train/HR_sub'
+lr_image_dir = '/home/kanghyun/MisalignSR/datasets/ZOOM/train/LR/4_sub'
 
 # Get the sorted list of images
 hr_images = sorted(os.listdir(hr_image_dir))
@@ -42,6 +42,7 @@ def curtain_effect(img1, img2, curtain_position):
 
 # Function to handle the Gradio interface logic
 def update_interface(index, curtain_position):
+
     # Get image paths
     hr_image_path, lr_image_path = get_image_paths(index)
     hr_image = Image.open(hr_image_path)

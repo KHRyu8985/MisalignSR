@@ -126,3 +126,26 @@ def log_optimal_transport(scores: torch.Tensor, alpha: torch.Tensor, iters: int)
     Z = log_sinkhorn_iterations(couplings, log_mu, log_nu, iters)
     Z = Z - norm  # multiply probabilities by M+N
     return Z
+
+
+def image2patch(im, patch_size=8, stride=2, concat_dim=0):
+    if im.dim() == 3:
+        N = 1
+        C, H, W = im.shape
+    elif im.dim() == 4:
+        N, C, H, W = im.shape
+    else:
+        raise ValueError("im must be 3 or 4 dim")
+
+    _patch = F.unfold(im, kernel_size=patch_size, stride=stride)
+    num_patches = _patch.shape[-1]
+    _patch = _patch.view(N, C, patch_size, patch_size, num_patches)
+    if concat_dim == 0:
+        _patch = _patch.permute(0, 4, 1, 2, 3)
+        patch = _patch.contiguous().view(-1, C, patch_size, patch_size)
+    elif concat_dim == 1:
+        _patch = _patch.permute(0, 4, 1, 2, 3)
+        patch = _patch.contiguous().view(N, -1, patch_size, patch_size)
+    else:
+        raise ValueError("concat_dim must be 0 or 1")
+    return patch

@@ -1,10 +1,10 @@
 # flake8: noqa
 import os.path as osp
 
-import archs
-import data
-import losses
-import models
+import misalignSR.archs
+import misalignSR.data
+import misalignSR.losses
+import misalignSR.models
 from basicsr.train import train_pipeline
 
 if __name__ == '__main__':

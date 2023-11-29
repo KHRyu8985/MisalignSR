@@ -11,7 +11,7 @@ from basicsr.archs.vgg_arch import VGGFeatureExtractor
 from misalignSR.archs.raft_arch import FlowGenerator
 from misalignSR.archs.arch_util import flow_warp
 from basicsr.utils.registry import LOSS_REGISTRY
-from .loss_util import weighted_loss
+from .loss_util import weighted_loss, image2patch
 
 _reduction_modes = ['none', 'mean', 'sum']
 
@@ -36,6 +36,27 @@ def modified_mse_loss(pred, target, eps=1e-3):
     # weight = target.detach()
     weight = pred.detach()
     return ((pred - target) / (weight + eps)) ** 2
+
+
+@weighted_loss
+def gw_loss(pred, target):
+    b, c, w, h = pred.shape
+    sobel_x = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]
+    sobel_y = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]]
+    sobel_x = torch.FloatTensor(sobel_x).expand(c, 1, 3, 3)
+    sobel_y = torch.FloatTensor(sobel_y).expand(c, 1, 3, 3)
+
+    sobel_x = sobel_x.type_as(pred)
+    sobel_y = sobel_y.type_as(pred)
+    weight_x = nn.Parameter(data=sobel_x, requires_grad=False)
+    weight_y = nn.Parameter(data=sobel_y, requires_grad=False)
+    Ix1 = F.conv2d(pred, weight_x, stride=1, padding=1, groups=c)
+    Ix2 = F.conv2d(target, weight_x, stride=1, padding=1, groups=c)
+    Iy1 = F.conv2d(pred, weight_y, stride=1, padding=1, groups=c)
+    Iy2 = F.conv2d(target, weight_y, stride=1, padding=1, groups=c)
+    dx = torch.abs(Ix1 - Ix2)
+    dy = torch.abs(Iy1 - Iy2)
+    return (1 + 4 * dx) * (1 + 4 * dy) * torch.abs(pred - target)
 
 
 class L1Loss(nn.Module):
@@ -1044,6 +1065,105 @@ class CoBiLoss(nn.Module):
         return cx_loss
 
 
+@LOSS_REGISTRY.register()
+class GWLoss(nn.Module):
+    def __init__(self, loss_weight=1.0, reduction='mean'):
+        super(GWLoss, self).__init__()
+        self.loss_weight = loss_weight
+        self.reduction = reduction
+
+    def forward(self, pred, target, weight=None, **kwargs):
+        """
+        Args:
+            pred (Tensor): of shape (N, C, H, W). Predicted tensor.
+            target (Tensor): of shape (N, C, H, W). Ground truth tensor.
+            weight (Tensor, optional): of shape (N, C, H, W). Element-wise
+                weights. Default: None.
+        """
+        return self.loss_weight * gw_loss(pred, target, weight, reduction=self.reduction)
+
+
+@LOSS_REGISTRY.register()
+class PatchCoBiLoss(nn.Module):
+    """
+    Creates a criterion that measures the cobi loss and patch cobi loss.
+    """
+
+    def __init__(
+        self,
+        band_width=0.5,
+        weight_sp=0.1,
+        loss_type='cosine',
+        use_vgg=True,
+        vgg_layer='conv4_4',
+        loss_weight=1.0,
+        reduction='mean',
+    ):
+        super().__init__()
+        if reduction not in ['none', 'mean', 'sum']:
+            raise ValueError(
+                f'Unsupported reduction mode: {reduction}. '
+                f'Supported ones are: {_reduction_modes}'
+            )
+        if loss_type not in ['cosine', 'l1', 'l2']:
+            raise ValueError(f'Unsupported loss mode: {reduction}.')
+
+        assert band_width > 0, 'band_width parameter must be positive.'
+        assert weight_sp >= 0 and weight_sp <= 1, 'weight_sp out of range [0, 1].'
+
+        self.band_width = band_width
+        self.loss_weight = loss_weight
+        self.reduction = reduction
+        self.loss_type = loss_type
+        self.weight_sp = weight_sp
+
+        if use_vgg:
+            self.vgg_model = VGGFeatureExtractor(
+                layer_name_list=[vgg_layer], vgg_type='vgg19'
+            )
+
+    def forward(self, pred, target, weight=None, **kwargs):
+        assert hasattr(self, 'vgg_model'), 'Please specify VGG model.'
+        assert (
+            pred.shape[1] == 3 and target.shape[1] == 3
+        ), 'VGG model takes 3 chennel images.'
+
+        # picking up vgg feature maps
+        pred_features = self.vgg_model(pred)
+        target_features = self.vgg_model(target.detach())
+
+        cx_loss = 0
+        for k in pred_features.keys():
+            cx_loss += cobi_loss(
+                pred_features[k],  # (4, 512, 30, 30)
+                target_features[k],
+                weight_sp=self.weight_sp,
+                band_width=self.band_width,
+                loss_type=self.loss_type,
+                weight=weight,
+                reduction=self.reduction,
+            )
+
+        cx_loss *= self.loss_weight
+
+        pred_features = image2patch(pred, patch_size=16, stride=2, concat_dim=1)
+        target_features = image2patch(target.detach(), patch_size=16, stride=2, concat_dim=1)
+
+        patch_cx_loss = cobi_loss(
+            pred_features,
+            target_features,
+            weight_sp=self.weight_sp,
+            band_width=self.band_width,
+            loss_type=self.loss_type,
+            weight=weight,
+            reduction=self.reduction,
+        )
+
+        loss = patch_cx_loss + 0.1 * cx_loss  # 1: 0.1
+
+        return loss
+
+
 @weighted_loss
 def mask_contextual_loss(pred, target, mask, band_width=0.5, loss_type='cosine'):
     """
@@ -1414,7 +1534,7 @@ class MaskCostVolumeLoss(nn.Module):
         if weight != None and weight.size(1) == 3:
             weight = weight[:, :1, :, :]
             border = torch.zeros_like(weight)
-            border[..., self.padding : -self.padding, self.padding : -self.padding] = 1
+            border[..., self.padding: -self.padding, self.padding: -self.padding] = 1
             # pdb.set_trace()
             weight *= border
 

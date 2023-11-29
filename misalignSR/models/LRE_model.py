@@ -6,7 +6,7 @@ from tqdm import tqdm
 from basicsr.utils import get_root_logger, tensor2img, imwrite
 from basicsr.archs import build_network
 from basicsr.losses import build_loss
-from misalignSR.losses.basic_loss import GradientLoss
+from misalignSR.losses.basic_loss import GWLoss
 from basicsr.utils.registry import MODEL_REGISTRY
 from basicsr.models.sr_model import SRModel
 
@@ -22,12 +22,13 @@ class LRESRModel(SRModel):
     def __init__(self, opt):
         super(SRModel, self).__init__(opt)
         self.weight_vis = self.opt["train"].get("weight_vis", True)
+        self.lre_batch_only = self.opt["train"].get("lre_batch_only", False)
 
         self.meta_loss_type = self.opt["train"].get("meta_loss", None) # if True then use GDL, else use L1
         self.start_meta = self.opt["train"].get("start_meta", None)
 
         if self.meta_loss_type is None:
-            self.meta_loss_type = 'GDL' # Default to GDL
+            self.meta_loss_type = 'GW' # Default to GDL
         if self.start_meta is None:
             self.start_meta = -1
 
@@ -50,6 +51,9 @@ class LRESRModel(SRModel):
         if self.is_train:
             self.init_training_settings()
 
+        self.test_all = self.opt['val'].get('test_all', False)
+        self.save_csv = self.opt['val'].get('save_csv', False)
+
     def feed_data(self, data):
         self.lq = data["lq"].to(self.device)
         if "gt" in data:
@@ -61,8 +65,8 @@ class LRESRModel(SRModel):
 
     def determine_meta_weight(self):
 
-        if self.meta_loss_type == 'GDL':
-            loss_func = GradientLoss(reduction="none").to(self.device)
+        if self.meta_loss_type == 'GW':
+            loss_func = GWLoss(reduction="none").to(self.device)
         else:
             loss_func = torch.nn.L1Loss(reduction="none").to(self.device)
 
@@ -71,7 +75,11 @@ class LRESRModel(SRModel):
         ) as (fnet, diffopt):
             # 1. Update meta model on training data
             output = fnet(self.lq)
-            meta_train_loss = torch.mean(loss_func(output, self.gt), dim=1, keepdim=True)
+
+            if self.lre_batch_only:
+                meta_train_loss = torch.mean(loss_func(output, self.gt), dim=(1,2,3), keepdim=True)
+            else:
+                meta_train_loss = torch.mean(loss_func(output, self.gt), dim=1, keepdim=True)
 
             # set pixel-reweight method
             eps = torch.zeros(

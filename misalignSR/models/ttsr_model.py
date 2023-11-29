@@ -9,6 +9,7 @@ from basicsr.metrics import calculate_metric
 from basicsr.utils import get_root_logger, imwrite, tensor2img
 from basicsr.utils.registry import MODEL_REGISTRY
 from basicsr.models.sr_model import SRModel
+import csv
 
 
 @MODEL_REGISTRY.register()
@@ -150,6 +151,19 @@ class TTSRModel(SRModel):
             self.metric_results = {metric: 0 for metric in self.opt['val']['metrics'].keys()}
         pbar = tqdm(total=len(dataloader), unit='image')
 
+        metric_data = dict()
+        if not self.test_all:
+            len_im = 10
+        else:
+            len_im = len(dataloader)
+
+        if self.save_csv:
+            csv_file_path = osp.join(self.opt['path']['visualization'], 'metrics.csv')
+            with open(csv_file_path, 'w', newline='') as csvfile:
+                csv_writer = csv.writer(csvfile)
+                # Write the header of CSV file
+                csv_writer.writerow(['Image Name'] + list(self.opt['val']['metrics'].keys()))
+
         for idx, val_data in enumerate(dataloader):
             img_name = osp.splitext(osp.basename(val_data['lq_path'][0]))[0]
             self.feed_data(val_data)
@@ -157,8 +171,10 @@ class TTSRModel(SRModel):
 
             visuals = self.get_current_visuals()
             sr_img = tensor2img([visuals['result']])
+            metric_data['img'] = sr_img
             if 'gt' in visuals:
                 gt_img = tensor2img([visuals['gt']])
+                metric_data['img2'] = gt_img
                 del self.gt
             if 'ref' in visuals:
                 ref_img = tensor2img([visuals['ref']])
@@ -169,7 +185,7 @@ class TTSRModel(SRModel):
             del self.output
             torch.cuda.empty_cache()
 
-            if save_img and idx < 10:
+            if save_img and idx < len_im:
                 if self.opt['is_train']:
                     save_img_path = osp.join(self.opt['path']['visualization'], img_name,
                                              f'{img_name}_{current_iter}.png')
@@ -186,8 +202,18 @@ class TTSRModel(SRModel):
 
             if with_metrics:
                 # calculate metrics
+                current_metrics = {}
                 for name, opt_ in self.opt['val']['metrics'].items():
-                    metric_data = dict(img=sr_img, img2=gt_img)
+                    current_metrics[name] = calculate_metric(metric_data, opt_)
+
+                if self.save_csv:
+                    # Save current image metrics to CSV file
+                    with open(csv_file_path, 'a') as csvfile:
+                        metrics_values = [f'{current_metrics[metric]:.3f}' for metric in current_metrics]
+                        csvfile.write(f'{img_name},' + ','.join(metrics_values) + '\n')
+                        print(f'{img_name},' + ','.join(metrics_values) + '\n')
+
+                for name, opt_ in self.opt['val']['metrics'].items():
                     self.metric_results[name] += calculate_metric(metric_data, opt_)
             pbar.update(1)
             pbar.set_description(f'Test {img_name}')
