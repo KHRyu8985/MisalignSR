@@ -10,9 +10,8 @@ from misalignSR.losses.basic_loss import GWLoss
 from basicsr.utils.registry import MODEL_REGISTRY
 from basicsr.models.sr_model import SRModel
 
+import higher
 import numpy as np
-import torchopt
-
 
 @MODEL_REGISTRY.register()
 class LRESRModel(SRModel):
@@ -25,11 +24,11 @@ class LRESRModel(SRModel):
         self.weight_vis = self.opt["train"].get("weight_vis", True)
         self.lre_batch_only = self.opt["train"].get("lre_batch_only", False)
 
-        self.meta_loss_type = self.opt["train"].get("meta_loss", None)  # if True then use GDL, else use L1
+        self.meta_loss_type = self.opt["train"].get("meta_loss", None) # if True then use GDL, else use L1
         self.start_meta = self.opt["train"].get("start_meta", None)
 
         if self.meta_loss_type is None:
-            self.meta_loss_type = 'GW'  # Default to GDL
+            self.meta_loss_type = 'GW' # Default to GDL
         if self.start_meta is None:
             self.start_meta = -1
 
@@ -37,9 +36,6 @@ class LRESRModel(SRModel):
         self.net_g = build_network(opt["network_g"])
         self.net_g = self.model_to_device(self.net_g)
         self.print_network(self.net_g)
-
-        lr = self.opt['train']['optim_g'].get("lr", 1e-4)
-        self.model_optimizer = torchopt.MetaSGD(self.net_g, lr=lr)  # use it for LRE
 
         # load pretrained models
         load_path = self.opt["path"].get("pretrain_network_g", None)
@@ -68,40 +64,44 @@ class LRESRModel(SRModel):
             self.meta_gt = data["meta_gt"].to(self.device)
 
     def determine_meta_weight(self):
-        # train pair: self.lq, self.gt
-        # meta pair: self.meta_lq, self.meta_gt
+
         if self.meta_loss_type == 'GW':
             loss_func = GWLoss(reduction="none").to(self.device)
         else:
             loss_func = torch.nn.L1Loss(reduction="none").to(self.device)
 
-        # First we need to reset the meta_weights to 0 (per-example)
-        meta_weights = torch.zeros((self.lq.shape[0], 1, 1, 1), requires_grad=True, device=self.device)
+        with higher.innerloop_ctx(
+            self.net_g, self.optimizer_g, copy_initial_weights=True
+        ) as (fnet, diffopt):
+            # 1. Update meta model on training data
+            output = fnet(self.lq)
 
-        # Now we save theta_{t-1} state of network and optimizer
-        net_state_dict = torchopt.extract_state_dict(self.net_g)
-        optim_state_dict = torchopt.extract_state_dict(self.model_optimizer)
+            if self.lre_batch_only:
+                meta_train_loss = torch.mean(loss_func(output, self.gt), dim=(1,2,3), keepdim=True)
+            else:
+                meta_train_loss = torch.mean(loss_func(output, self.gt), dim=1, keepdim=True)
 
-        # Now we perform the inner loop
-        for _ in range(1):
-            train_sr = self.net_g(self.lq)
-            inner_loss = torch.sum(torch.mean(loss_func(train_sr, self.gt), dim=(1, 2, 3), keepdim=True) * meta_weights)
-            self.model_optimizer.step(inner_loss)
+            # set pixel-reweight method
+            eps = torch.zeros(
+                meta_train_loss.size(), requires_grad=True, device=self.device
+            )
 
-        # Now we perform the outer loop
-        meta_sr = self.net_g(self.meta_lq)
-        outer_loss = torch.mean(loss_func(meta_sr, self.meta_gt))
-        meta_weights = -torch.autograd.grad(outer_loss, meta_weights)[0]
-        # Normalize the weights
-        meta_weights = torch.nn.ReLU()(meta_weights.detach())
-        weights_sum = torch.sum(meta_weights)
-        weights_sum = weights_sum + 1 if weights_sum == 0 else weights_sum
-        meta_weights = meta_weights / weights_sum
+            meta_train_loss = torch.sum(eps * meta_train_loss)
+            diffopt.step(meta_train_loss)
 
-        # Now we restore the theta_{t-1} state of network and optimizer
-        torchopt.recover_state_dict(self.net_g, net_state_dict)
-        torchopt.recover_state_dict(self.model_optimizer, optim_state_dict)
+            # 2. Compute grads of eps on meta validation data
+            meta_val_loss = loss_func(fnet(self.meta_lq), self.meta_gt)
+            meta_val_loss = torch.mean(meta_val_loss)
 
+            eps_grads = torch.autograd.grad(meta_val_loss, eps)[0].detach()
+
+        # Compute weights for current training batch
+        meta_weights = torch.clamp(-eps_grads, min=0)
+        l1_norm = torch.mean(meta_weights)
+        if l1_norm != 0:
+            meta_weights = meta_weights / l1_norm
+        else:
+            meta_weights = meta_weights
         return meta_weights
 
     def optimize_parameters(self, current_iter):

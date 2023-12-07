@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define the source and destination directories for HR and LR images
-SOURCE_HR_DIR="datasets/ZOOM/train/HR_sub"
-SOURCE_LR_DIR="datasets/ZOOM/train/LR/4_sub"
+SOURCE_HR_DIR="/home/kanghyun/MisalignSR/results/Alignformer_test/visualization/ZOOM"
+SOURCE_LR_DIR="/home/kanghyun/MisalignSR/datasets/ZOOM/test/LR/4_sub_large"
 DEST_HR_META_DIR="datasets/ZOOM/train/HR_4_meta"
 DEST_LR_META_DIR="datasets/ZOOM/train/LR_4_meta"
 

@@ -12,9 +12,9 @@ datasets:
   test:
     name: ZOOM
     type: TripleImageDataset
-    dataroot_gt: datasets/ZOOM/train/HR_4_meta
-    dataroot_ref: datasets/ZOOM/train/HR_4_meta
-    dataroot_lq: datasets/ZOOM/train/LR_4_meta
+    dataroot_gt: datasets/ZOOM/test/HR_sub_large
+    dataroot_ref: datasets/ZOOM/test/HR_sub_large
+    dataroot_lq: datasets/ZOOM/test/LR/4_sub_large
     io_backend:
       type: disk
 

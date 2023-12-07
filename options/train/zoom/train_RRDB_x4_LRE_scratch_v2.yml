@@ -1,5 +1,5 @@
 # general settings
-name: RRDB_LRE_x4_ZOOM_scratch
+name: RRDB_LRE_x4_ZOOM_scratch_v2
 model_type: LRESRModel
 scale: 1
 num_gpu: 1  # set num_gpu: 0 for cpu mode
@@ -56,7 +56,7 @@ path:
 train:
   ema_decay: 0.999
   weight_vis: False
-  start_meta: 5000 # start meta learning (LRE) after 20000 iterations
+  start_meta: -1 # start meta learning (LRE) after 20000 iterations
   meta_loss: GW
   lre_batch_only: True
 

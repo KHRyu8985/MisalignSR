@@ -1,6 +1,6 @@
 # general settings
-name: RRDB_LRE_x4_ZOOM_scratch
-model_type: LRESRModel
+name: RRDB_MWN_x4_ZOOM_scratch
+model_type: MWNSRModel
 scale: 1
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
@@ -46,6 +46,9 @@ network_g:
   num_grow_ch: 32
   scale: 1
 
+network_mwn:
+  type: SimpleMWNet
+
 # path
 path:
   pretrain_network_g: experiments/RRDB_x4_ZOOM_scratch/models/net_g_90000.pth
@@ -65,6 +68,13 @@ train:
     lr: !!float 1e-4
     weight_decay: 0
     betas: [0.9, 0.99]
+
+  optim_meta_g:
+    type: Adam
+    lr: !!float 1e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
 
   scheduler:
     type: MultiStepLR

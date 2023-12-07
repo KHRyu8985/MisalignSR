@@ -8,17 +8,14 @@ from basicsr.utils import get_root_logger, tensor2img, imwrite
 from basicsr.archs import build_network
 from basicsr.losses import build_loss
 from basicsr.utils.registry import MODEL_REGISTRY
-from misalignSR.models.LRE_model import LRESRModel
+from basicsr.models.sr_model import SRModel
 import higher
 import numpy as np
 from misalignSR.losses.basic_loss import GradientLoss
-from torch.func import functional_call, vmap, grad
-from misalignSR.losses.basic_loss import GWLoss
-import torchopt
 
 
 @MODEL_REGISTRY.register()
-class MWNSRModel(LRESRModel):
+class MWNSRModel(SRModel):
     """Misaligned Meta learning SR model for single image super-resolution."""
 
     """Modify from original SRModel in basicsr/models/SRModel.py"""
@@ -57,11 +54,6 @@ class MWNSRModel(LRESRModel):
         self.net_v = build_network(self.opt["network_mwn"])
         self.net_v = self.model_to_device(self.net_v)
         self.print_network(self.net_v)
-
-        # optimizer for meta-weight-net
-        lr = self.opt['train']['optim_g'].get("lr", 1e-4)
-        self.g_model_optimizer = torchopt.MetaSGD(self.net_g, lr=lr)  # use it for MWN
-        self.v_model_optimizer = torchopt.MetaSGD(self.net_v, lr=lr)  # use it for MWN
 
         # load pretrained models
         load_path = self.opt["path"].get("pretrain_network_v", None)
@@ -121,59 +113,93 @@ class MWNSRModel(LRESRModel):
             self.meta_gt = data["meta_gt"].to(self.device)
 
     def determine_meta_weight(self, current_iter):
-        if self.meta_loss_type == 'GW':
-            loss_func = GWLoss().to(self.device)
-        else:
-            loss_func = torch.nn.L1Loss().to(self.device)
 
-        net_state_dict = torchopt.extract_state_dict(self.net_g) # net_g ---> parameter (theta_{t-1})
-        # optim_state_dict = torchopt.extract_state_dict(self.model_optimizer)  # used for recovering
+        if current_iter % 10 == 0:
+            # update meta model
+            loss_func = nn.L1Loss(reduction="none").to(self.device)
 
-        # use functorch to devide by params
+            inner_opt = torch.optim.SGD(
+                self.net_g.parameters(), lr=1e-4
+            )  # SGD for inner loop
 
-        theta = dict(self.net_g.named_parameters())
-        phi = dict(self.net_v.named_parameters())
+            # Internal loop
+            with higher.innerloop_ctx(self.net_g, inner_opt, copy_initial_weights=True) as (
+                fnet,
+                diffopt,
+            ):
+                # 1. Update meta model on training data
+                output = fnet(self.lq)
+                meta_train_loss = loss_func(output, self.gt)
 
-        fmodel = self.net_g
-        wmodel = self.net_v
+                meta_train_loss = torch.mean(meta_train_loss, dim=(1, 2, 3), keepdim=False)  # 16 x 1
+                meta_train_loss.backward(torch.ones_like(meta_train_loss))
 
-        def compute_loss(params, sample, target):
-            if sample.ndim == 3:
-                sample = sample.unsqueeze(0)  # prepend batch dimension for processing
-                target = target.unsqueeze(0)
+                from torch.func import functional_call, vmap, grad
+                params = {k: v.detach() for k, v in fnet.named_parameters()}
+                buffers = {k: v.detach() for k, v in fnet.named_buffers()}
 
-            prediction = functional_call(fmodel, params, (sample,))  # prediction
-            loss = loss_func(prediction, target)
-            return loss
+                
+                ft_compute_grad = grad(compute_loss)
+                ft_compute_sample_grad = vmap(ft_compute_grad, in_dims=(None, None, 0, 0))
+                ft_per_sample_grads = ft_compute_sample_grad(params, buffers, self.lq, self.gt) # might help to detach gradients
 
+                out = torch.cat([output.data, self.gt.data], dim=1)
+                w_xy_phi = self.net_v(out)  # w(x,y,phi)
+                w_xy_phi = w_xy_phi.mean(dim=(1, 2, 3), keepdim=False)  # 16 x 1
 
-        # Now we perform the inner loop
-        for _ in range(1):
-            weight_train_input = torch.cat((self.lq, self.gt), dim=1)
-            meta_weights = functional_call(wmodel, phi, (weight_train_input,))
+                for i, (name, param) in enumerate(fnet.named_parameters()):
+                    # Obtain the corresponding gradient
+                    grad_for_param = ft_per_sample_grads[name]
+                    # Reshape w_xy_phi for broadcasting for the current parameter's gradient
+                    # Add singleton dimensions to match the gradient's dimensions, except for the batch dimension
+                    reshaped_w_xy_phi = w_xy_phi.view(-1, *[1 for _ in range(grad_for_param.ndim - 1)])
+                    # Weight the gradients by w_xy_phi (broadcasting happens here)
+                    weighted_grad = grad_for_param * reshaped_w_xy_phi
+                    # Sum the gradients over the batch dimension
+                    summed_grad = weighted_grad.sum(0)
+                    # Manually set the gradients
+                    param.grad = summed_grad
 
-            # compute per-sample gradients for training batch
-            per_sample_loss = vmap(compute_loss, in_dims=(None, 0, 0))(theta, self.lq, self.gt)
-            per_sample_grads = vmap(grad(compute_loss), in_dims=(None, 0, 0),)(theta, self.lq, self.gt)
+                # Example of a manual update
+                learning_rate = 1e-5  # very small learning rate
+                for param in fnet.parameters():
+                    if param.grad is not None:
+                        param.data -= learning_rate * param.grad  # Basic gradient descent update
 
-            # compute weighted-loss
-            inner_loss = torch.sum(meta_weights * per_sample_loss)
+            # now fnet becomes theta_t
+            J_e = loss_func(fnet(self.meta_lq), self.meta_gt)
+            J_e = torch.mean(J_e)
+
+            meta_val_loss_grad = torch.autograd.grad(J_e, (fnet.parameters()), create_graph=True)
+            meta_val_loss_grad = {name: grad for (name, _), grad in zip(fnet.named_parameters(), meta_val_loss_grad)}
+
+            for i, (name, param) in enumerate(fnet.named_parameters()):
+                grad_theta_train = ft_per_sample_grads[name]
+                grad_theta_val = meta_val_loss_grad[name][None]
+                ndim = grad_theta_train.ndim
+
+                dot_product = torch.sum(grad_theta_train * grad_theta_val, dim=list(1,ndim), keepdim=False)
+
             breakpoint()
-            print(theta['conv_first.weight'])
-            self.model_optimizer.step(inner_loss)
-            print(theta['conv_first.weight'])
-
-        # Now we perform the outer loop
-        val_loss = compute_loss(theta, self.meta_lq, self.meta_gt)
-        val_grad = torch.autograd.grad(val_loss, theta, create_graph=True)
-
-        # --> theta_{t-1} recover
 
 
 
+            # check size
+#            R_i = w_xy_phi * grad_term
+#            phi_update_loss = torch.nn.functional.log(w_xy_phi) * R_i
 
-        # compute
-        return meta_weights
+            # External loop
+            # 2. Update meta model on validation data
+#            self.optimizer_meta_g.zero_grad()
+#            meta_val_loss.backward()
+#            self.optimizer_meta_g.step()
+
+        with torch.no_grad():
+            final_yhat = self.net_g(self.lq)
+            out = torch.cat([final_yhat.data, self.gt.data], dim=1)
+            w_new = self.net_v(out)
+
+        return w_new
 
     def optimize_parameters(self, current_iter):
         self.optimizer_g.zero_grad()
@@ -190,6 +216,7 @@ class MWNSRModel(LRESRModel):
             logger.info(f"weight is Mean: {weights.mean()}, STD: {weights.std()}")
 
             w = tensor2img(weights.detach().cpu())
+
             o = tensor2img(self.output.detach().cpu())
             g = tensor2img(self.gt.detach().cpu())
             i = np.concatenate((o, w, g), axis=1)

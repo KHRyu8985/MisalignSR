@@ -3,8 +3,8 @@ import os
 from PIL import Image, ImageDraw
 
 # Define the directories for HR and LR images
-hr_image_dir = '/home/kanghyun/MisalignSR/datasets/ZOOM/train/HR_sub'
-lr_image_dir = '/home/kanghyun/MisalignSR/datasets/ZOOM/train/LR/4_sub'
+hr_image_dir = '/home/kanghyun/MisalignSR/results/Alignformer_test/visualization/ZOOM'
+lr_image_dir = '/home/kanghyun/MisalignSR/datasets/ZOOM/test/LR/4_sub_large'
 
 # Get the sorted list of images
 hr_images = sorted(os.listdir(hr_image_dir))

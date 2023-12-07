@@ -75,7 +75,7 @@ class PairedMetaImageDataset(data.Dataset):
             # random crop
             img_gt, img_lq = paired_random_crop(img_gt, img_lq, gt_size, scale, gt_path)
             meta_img_gt, meta_img_lq = paired_random_crop(
-                meta_img_gt, meta_img_lq, gt_size, scale, meta_gt_path
+                meta_img_gt, meta_img_lq, gt_size*3, scale, meta_gt_path
             )
 
             # flip, rotation

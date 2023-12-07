@@ -33,7 +33,7 @@ def extract_subimages(opt):
     with multiprocessing.Pool() as pool:
         pool.starmap(process_image, [(img_path, opt) for img_path in img_list])
 
-
+'''
 
 # HR images
 opt_train = {
@@ -53,16 +53,16 @@ for scale in scales:
     opt_train['input_folder'] = f'datasets/ZOOM/train/LR/{folder_scale}'
     opt_train['save_folder'] = f'datasets/ZOOM/train/LR/{folder_scale}_sub'
     extract_subimages(opt_train)
-
+'''
 
 ### Same for the test
 # HR images
 opt_test = {
     'input_folder': 'datasets/ZOOM/test/HR',
-    'save_folder': 'datasets/ZOOM/test/HR_sub',
-    'crop_size': 1000,
-    'step': 500,
-    'thresh_size': 1000,
+    'save_folder': 'datasets/ZOOM/test/HR_sub_large',
+    'crop_size': 1200,
+    'step': 600,
+    'thresh_size': 1200,
 }
 extract_subimages(opt_test)
 
@@ -71,5 +71,5 @@ scales = [2, 3, 4, 5, 6]
 for scale in scales:
     folder_scale = str(scale).replace('.', '_')  # Convert 1.5 to 1_5, 2.5 to 2_5, etc.
     opt_test['input_folder'] = f'datasets/ZOOM/test/LR/{folder_scale}'
-    opt_test['save_folder'] = f'datasets/ZOOM/test/LR/{folder_scale}_sub'
+    opt_test['save_folder'] = f'datasets/ZOOM/test/LR/{folder_scale}_sub_large'
     extract_subimages(opt_test)
