@@ -22,7 +22,7 @@ datasets:
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 3
-    batch_size_per_gpu: 16
+    batch_size_per_gpu: 128
     dataset_enlarge_ratio: 10
     prefetch_mode: ~
 
@@ -80,7 +80,7 @@ train:
 
 val:
   val_freq: !!float 5e3
-  save_img: True
+  save_img: False
 
   metrics:
     psnr: # metric name, can be arbitrary

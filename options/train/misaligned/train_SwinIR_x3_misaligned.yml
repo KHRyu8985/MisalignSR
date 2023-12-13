@@ -1,5 +1,5 @@
 # general settings
-name: RCANx3_scratch_DIV2K_misaligned
+name: SwinIRx3_scratch_DIV2K_misaligned
 model_type: SRModel
 scale: 3
 num_gpu: 1  # set num_gpu: 0 for cpu mode
@@ -22,7 +22,7 @@ datasets:
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 3
-    batch_size_per_gpu: 128
+    batch_size_per_gpu: 64
     dataset_enlarge_ratio: 10
     prefetch_mode: ~
 
@@ -36,17 +36,18 @@ datasets:
 
 # network structures
 network_g:
-  type: RCAN
-  num_in_ch: 3
-  num_out_ch: 3
-  num_feat: 64
-  num_group: 10
-  num_block: 15
-  squeeze_factor: 16
+  type: SwinIR
   upscale: 3
-  res_scale: 1
-  img_range: 255.
-  rgb_mean: [0.4488, 0.4371, 0.4040]
+  in_chans: 3
+  img_size: 48
+  window_size: 8
+  img_range: 1.
+  depths: [6, 6, 6, 6, 6, 6]
+  embed_dim: 180
+  num_heads: [6, 6, 6, 6, 6, 6]
+  mlp_ratio: 2
+  upsampler: 'pixelshuffle'
+  resi_connection: '1conv'
 
 
 # path

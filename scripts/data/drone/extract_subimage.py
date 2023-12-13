@@ -12,7 +12,7 @@ from alignformer.utils import scandir
 def main():
     """A multi-thread tool to crop large images to sub-images for faster IO.
 
-    It is used for DIV2K dataset.
+    It is used for DRONE dataset.
 
     Args:
         opt (dict): Configuration dict. It contains:
@@ -27,12 +27,12 @@ def main():
 
     Usage:
         For each folder, run this script.
-        Typically, there are four folders to be processed for DIV2K dataset.
+        Typically, there are four folders to be processed for DRONE dataset.
 
-            * DIV2K_train_HR
-            * DIV2K_train_LR_bicubic/X2
-            * DIV2K_train_LR_bicubic/X3
-            * DIV2K_train_LR_bicubic/X4
+            * DRONE_train_HR
+            * DRONE_train_LR_bicubic/X2
+            * DRONE_train_LR_bicubic/X3
+            * DRONE_train_LR_bicubic/X4
 
         After process, each sub_folder should have the same number of subimages.
 
@@ -43,44 +43,58 @@ def main():
     opt['n_thread'] = 20
     opt['compression_level'] = 3
 
-    # HR images
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_HR'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_HR_sub'
-    opt['crop_size'] = 480
-    opt['step'] = 240
-    opt['thresh_size'] = 0
-    opt['shift_level'] = 0
-    extract_subimages(opt)
-
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_HR'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_HR_sub_misaligned'
-    opt['crop_size'] = 480
-    opt['step'] = 240
-    opt['thresh_size'] = 0
-    opt['shift_level'] = 1.5  # 1.5% misalignment
-    extract_subimages(opt)
-
-    # LRx2 images
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X2'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X2_sub'
+    # HRx2 images
+    opt['input_folder'] = 'datasets/DRONE/DRONE_train_HR'
+    opt['save_folder'] = 'datasets/DRONE/DRONE_train_HR_X2_sub'
+    opt['resize_size'] = 360
     opt['crop_size'] = 240
     opt['step'] = 120
     opt['thresh_size'] = 0
     opt['shift_level'] = 0
     extract_subimages(opt)
 
-    # LRx3 images
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X3'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X3_sub'
-    opt['crop_size'] = 160
-    opt['step'] = 80
+    # opt['input_folder'] = 'datasets/DRONE/DRONE_train_HR'
+    # opt['save_folder'] = 'datasets/DRONE/DRONE_train_HR_X2_sub_misaligned'
+    # opt['resize_size'] = 360
+    # opt['crop_size'] = 240
+    # opt['step'] = 120
+    # opt['thresh_size'] = 0
+    # opt['shift_level'] = 1.5  # 1.5% misalignment
+    # extract_subimages(opt)
+
+    # HRx3 images
+    opt['input_folder'] = 'datasets/DRONE/DRONE_train_HR'
+    opt['save_folder'] = 'datasets/DRONE/DRONE_train_HR_X3_sub'
+    opt['resize_size'] = 540
+    opt['crop_size'] = 360
+    opt['step'] = 180
     opt['thresh_size'] = 0
     opt['shift_level'] = 0
     extract_subimages(opt)
 
-    # LRx4 images
-    opt['input_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X4'
-    opt['save_folder'] = 'datasets/DIV2K/DIV2K_train_LR_bicubic/X4_sub'
+    # opt['input_folder'] = 'datasets/DRONE/DRONE_train_HR'
+    # opt['save_folder'] = 'datasets/DRONE/DRONE_train_HR_X3_sub_misaligned'
+    # opt['resize_size'] = 540
+    # opt['crop_size'] = 360
+    # opt['step'] = 180
+    # opt['thresh_size'] = 0
+    # opt['shift_level'] = 1.5  # 1.5% misalignment
+    # extract_subimages(opt)
+
+    # HRx4 images
+    opt['input_folder'] = 'datasets/DRONE/DRONE_train_HR'
+    opt['save_folder'] = 'datasets/DRONE/DRONE_train_HR_X4_sub'
+    opt['resize_size'] = 720
+    opt['crop_size'] = 480
+    opt['step'] = 240
+    opt['thresh_size'] = 0
+    opt['shift_level'] = 0
+    extract_subimages(opt)
+
+    # LRx50_9 images
+    opt['input_folder'] = 'datasets/DRONE/DRONE_train_LR_real/X50_9'
+    opt['save_folder'] = 'datasets/DRONE/DRONE_train_LR_real/X50_9_sub'
+    opt['resize_size'] = 180
     opt['crop_size'] = 120
     opt['step'] = 60
     opt['thresh_size'] = 0
@@ -138,12 +152,16 @@ def worker(path, opt):
     thresh_size = opt['thresh_size']
     img_name, extension = osp.splitext(osp.basename(path))
 
-    # remove the x2, x3, x4 and x8 in the filename for DIV2K
+    # remove the x2, x3, x4 and x8 in the filename for DRONE
     img_name = (
         img_name.replace('x2', '').replace('x3', '').replace('x4', '').replace('x8', '')
     )
 
     img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+
+    if opt['resize_size'] is not None:
+        resized_size = (opt['resize_size'], opt['resize_size'])
+        img = cv2.resize(img, resized_size, interpolation=cv2.INTER_CUBIC)  
 
     h, w = img.shape[0:2]
     h_space = np.arange(0, h - crop_size + 1, step)

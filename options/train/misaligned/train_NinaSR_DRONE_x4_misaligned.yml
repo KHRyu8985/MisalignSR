@@ -1,21 +1,21 @@
 # general settings
-name: RCANx3_scratch_DIV2K_misaligned
+name: NinaSRx4_scratch_DRONE_misaligned
 model_type: SRModel
-scale: 3
+scale: 4
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
 # dataset and data loader settings
 datasets:
   train:
-    name: DIV2K
+    name: DRONE
     type: PairedImageDataset
-    dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub_misaligned
-    dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X3_sub
+    dataroot_gt: datasets/DRONE/DRONE_train_HR_X4_sub
+    dataroot_lq: datasets/DRONE/DRONE_valid_LR_real/X50_9_sub
     io_backend:
       type: disk
 
-    gt_size: 120
+    gt_size: 128
     use_hflip: true
     use_rot: true
 
@@ -27,27 +27,23 @@ datasets:
     prefetch_mode: ~
 
   val:
-    name: DIV2K
+    name: DRONE
     type: PairedImageDataset
-    dataroot_gt: datasets/DIV2K/DIV2K_valid_HR_sub
-    dataroot_lq: datasets/DIV2K/DIV2K_valid_LR_bicubic/X3_sub
+    dataroot_gt: datasets/DRONE/DRONE_valid_HR_X4_sub
+    dataroot_lq: datasets/DRONE/DRONE_valid_LR_real/X50_9_sub
     io_backend:
       type: disk
 
 # network structures
 network_g:
-  type: RCAN
+  type: NinaSR
   num_in_ch: 3
   num_out_ch: 3
   num_feat: 64
-  num_group: 10
-  num_block: 15
-  squeeze_factor: 16
-  upscale: 3
-  res_scale: 1
-  img_range: 255.
-  rgb_mean: [0.4488, 0.4371, 0.4040]
-
+  num_block: 16
+  upscale: 4
+  expansion: 2.0
+  
 
 # path
 path:
@@ -80,7 +76,7 @@ train:
 
 val:
   val_freq: !!float 5e3
-  save_img: True
+  save_img: False
 
   metrics:
     psnr: # metric name, can be arbitrary
