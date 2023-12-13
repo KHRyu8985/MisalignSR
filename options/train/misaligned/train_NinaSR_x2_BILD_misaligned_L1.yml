@@ -1,7 +1,7 @@
 # general settings
-name: NinaSRx4_scratch_DIV2K_BILD_misaligned_L1
+name: NinaSRx2_scratch_DIV2K_BILD_misaligned_L1
 model_type: BILDSRModel
-scale: 4
+scale: 2
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
@@ -11,13 +11,13 @@ datasets:
     name: DIV2K
     type: PairedMetaImageDataset
     dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub_misaligned
-    dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X4_sub
+    dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X2_sub
     dataroot_meta_gt: datasets/DIV2K/DIV2K_meta_HR_sub
-    dataroot_meta_lq: datasets/DIV2K/DIV2K_meta_LR_bicubic/X4_sub
+    dataroot_meta_lq: datasets/DIV2K/DIV2K_meta_LR_bicubic/X2_sub
     io_backend:
       type: disk
 
-    gt_size: 128
+    gt_size: 144
     use_hflip: true
     use_rot: true
 
@@ -32,7 +32,7 @@ datasets:
     name: DIV2K
     type: PairedImageDataset
     dataroot_gt: datasets/DIV2K/DIV2K_valid_HR_sub
-    dataroot_lq: datasets/DIV2K/DIV2K_valid_LR_bicubic/X4_sub
+    dataroot_lq: datasets/DIV2K/DIV2K_valid_LR_bicubic/X2_sub
     io_backend:
       type: disk
 
@@ -43,7 +43,7 @@ network_g:
   num_out_ch: 3
   num_feat: 16
   num_block: 10
-  upscale: 4
+  upscale: 2
   expansion: 2.0
 
 network_bild:
@@ -52,13 +52,13 @@ network_bild:
 # path
 path:
   pretrain_network_g: ~
-  strict_load_g: true
+  strict_load_g: True
   resume_state: ~
 
 # training settings
 train:
   ema_decay: 0.999
-  weight_vis: True
+  weight_vis: false
   start_meta: 5000 # start meta learning (LRE) after 10000 iterations
   meta_loss: L1
 
