@@ -42,16 +42,20 @@ def main():
     opt = {}
     opt['n_thread'] = 20
     opt['compression_level'] = 3
+    opt['crop_size'] = 500
+    opt['step'] = 250
+    opt['thresh_size'] = 500
+    opt['shift_level'] = 0
 
     # HR images
     opt['input_folder'] = 'datasets/ZOOM/ZOOM_valid_HR'
     opt['save_folder'] = 'datasets/ZOOM/ZOOM_valid_HR_sub'
     extract_subimages(opt)
 
-    # LRx2 images
-    opt['input_folder'] = 'datasets/ZOOM/ZOOM_valid_LR_bicubic/X2'
-    opt['save_folder'] = 'datasets/ZOOM/ZOOM_valid_LR_bicubic/X2_sub'
-    extract_subimages(opt)
+    # # LRx2 images
+    # opt['input_folder'] = 'datasets/ZOOM/ZOOM_valid_LR_bicubic/X2'
+    # opt['save_folder'] = 'datasets/ZOOM/ZOOM_valid_LR_bicubic/X2_sub'
+    # extract_subimages(opt)
 
     # LRx2 real images
     opt['input_folder'] = 'datasets/ZOOM/ZOOM_valid_LR_real/X2'
@@ -67,6 +71,27 @@ def main():
     # opt['input_folder'] = 'datasets/ZOOM/ZOOM_valid_LR_bicubic/X4'
     # opt['save_folder'] = 'datasets/ZOOM/ZOOM_valid_LR_bicubic/X4_sub'
     # extract_subimages(opt)
+
+
+def save_img(img, path):
+    cv2.imwrite(path, img)
+
+def process_image(img_path, opt):
+    print(img_path)
+    img_name = osp.splitext(osp.basename(img_path))[0]
+    img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+    h, w, _ = img.shape
+    idx = 0
+    for x in range(0, w - opt['crop_size'] + 1, opt['step']):
+        for y in range(0, h - opt['crop_size'] + 1, opt['step']):
+            idx += 1
+            x_end = min(x + opt['crop_size'], w)
+            y_end = min(y + opt['crop_size'], h)
+            cropped = img[y:y_end, x:x_end, :]
+            if cropped.shape[0] < opt['thresh_size'] or cropped.shape[1] < opt['thresh_size']:
+                continue
+            save_fn = osp.join(opt['save_folder'], f'{img_name}_s{idx:03d}.png')
+            save_img(cropped, save_fn)
 
 
 def extract_subimages(opt):

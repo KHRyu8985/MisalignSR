@@ -1,6 +1,6 @@
 # general settings
-name: RCANx3_scratch_DIV2K_misaligned
-model_type: SRModel
+name: RCANx3_scratch_DIV2K_BILD_misaligned_L1
+model_type: BILDSRModel
 scale: 3
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
@@ -9,9 +9,11 @@ manual_seed: 0
 datasets:
   train:
     name: DIV2K
-    type: PairedImageDataset
+    type: PairedMetaImageDataset
     dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub_misaligned
     dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X3_sub
+    dataroot_meta_gt: datasets/DIV2K/DIV2K_meta_HR_sub
+    dataroot_meta_lq: datasets/DIV2K/DIV2K_meta_LR_bicubic/X3_sub
     io_backend:
       type: disk
 
@@ -21,7 +23,7 @@ datasets:
 
     # data loader
     use_shuffle: true
-    num_worker_per_gpu: 3
+    num_worker_per_gpu: 8
     batch_size_per_gpu: 128
     dataset_enlarge_ratio: 10
     prefetch_mode: ~
@@ -52,12 +54,16 @@ network_g:
 # path
 path:
   pretrain_network_g: ~
-  strict_load_g: true
-  resume_state: ~
+  strict_load_g: False
+  resume_state: ~ # path to the checkpoint e.g) /home/kanghyun/MisalignSR/experiments/RCANx3_scratch_DIV2K_LRE_misaligned/training_states/60000.state
 
 # training settings
 train:
   ema_decay: 0.999
+  weight_vis: True
+  start_meta: 5000 # start meta learning (LRE) after 10000 iterations
+  meta_loss: L1
+
   optim_g:
     type: Adam
     lr: !!float 1e-4
@@ -80,7 +86,7 @@ train:
 
 val:
   val_freq: !!float 5e3
-  save_img: True
+  save_img: false
 
   metrics:
     psnr: # metric name, can be arbitrary

@@ -24,8 +24,12 @@ def list_option_files():
 def interactive_train():
     click.echo("Select a training option:")
     option_files = list_option_files()
+    option_files.sort()
     for i, file in enumerate(option_files):
-        click.echo(f"{i + 1}: {file}")
+        if i < 9:
+            click.echo(f"0{i + 1}: {file}")
+        else:
+            click.echo(f"{i + 1}: {file}")
 
     choice = click.prompt("Please enter the number of your choice", type=int)
     selected_option = option_files[choice - 1]

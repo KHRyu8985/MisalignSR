@@ -29,9 +29,10 @@ def main():
         For each folder, run this script.
         Typically, there are four folders to be processed for DRONE dataset.
 
-            * DRONE_valid_HR
-            * DRONE_valid_HR_X3_sub
-            * DRONE_valid_LR_real/X50_9
+            * DRONE_meta_HR
+            * DRONE_meta_LR_bicubic/X2
+            * DRONE_meta_LR_bicubic/X3
+            * DRONE_meta_LR_bicubic/X4
 
         After process, each sub_folder should have the same number of subimages.
 
@@ -43,28 +44,44 @@ def main():
     opt['compression_level'] = 3
 
     # HRx2 images
-    opt['input_folder'] = 'datasets/DRONE/DRONE_valid_HR'
-    opt['save_folder'] = 'datasets/DRONE/DRONE_valid_HR_X2'
+    opt['input_folder'] = 'datasets/DRONE/DRONE_meta_LR_real/X50_9'
+    opt['save_folder'] = 'datasets/DRONE/DRONE_meta_HR_X2_bicubic_sub'
     opt['resize_size'] = 360
+    opt['crop_size'] = 240
+    opt['step'] = 120
+    opt['thresh_size'] = 0
+    opt['shift_level'] = 0
     extract_subimages(opt)
 
     # HRx3 images
-    opt['input_folder'] = 'datasets/DRONE/DRONE_valid_HR'
-    opt['save_folder'] = 'datasets/DRONE/DRONE_valid_HR_X3'
+    opt['input_folder'] = 'datasets/DRONE/DRONE_meta_LR_real/X50_9'
+    opt['save_folder'] = 'datasets/DRONE/DRONE_meta_HR_X3_bicubic_sub'
     opt['resize_size'] = 540
+    opt['crop_size'] = 360
+    opt['step'] = 180
+    opt['thresh_size'] = 0
+    opt['shift_level'] = 0
     extract_subimages(opt)
 
     # HRx4 images
-    opt['input_folder'] = 'datasets/DRONE/DRONE_valid_HR'
-    opt['save_folder'] = 'datasets/DRONE/DRONE_valid_HR_X4'
+    opt['input_folder'] = 'datasets/DRONE/DRONE_meta_LR_real/X50_9'
+    opt['save_folder'] = 'datasets/DRONE/DRONE_meta_HR_X4_bicubic_sub'
     opt['resize_size'] = 720
+    opt['crop_size'] = 480
+    opt['step'] = 240
+    opt['thresh_size'] = 0
+    opt['shift_level'] = 0
     extract_subimages(opt)
 
-
-    # # LRx50_9 images
-    # opt['input_folder'] = 'datasets/DRONE/DRONE_valid_LR_real/X50_9'
-    # opt['save_folder'] = 'datasets/DRONE/DRONE_valid_LR_real/X50_9_sub'
-    # extract_subimages(opt)
+    # LRx50_9 images
+    opt['input_folder'] = 'datasets/DRONE/DRONE_meta_LR_real/X50_9'
+    opt['save_folder'] = 'datasets/DRONE/DRONE_meta_LR_real/X50_9_sub'
+    opt['resize_size'] = 180
+    opt['crop_size'] = 120
+    opt['step'] = 60
+    opt['thresh_size'] = 0
+    opt['shift_level'] = 0
+    extract_subimages(opt)
 
 
 def extract_subimages(opt):
@@ -112,8 +129,15 @@ def worker(path, opt):
     Returns:
         process_info (str): Process information displayed in progress bar.
     """
-
+    crop_size = opt['crop_size']
+    step = opt['step']
+    thresh_size = opt['thresh_size']
     img_name, extension = osp.splitext(osp.basename(path))
+
+    # remove the x2, x3, x4 and x8 in the filename for DRONE
+    img_name = (
+        img_name.replace('x2', '').replace('x3', '').replace('x4', '').replace('x8', '')
+    )
 
     img = cv2.imread(path, cv2.IMREAD_UNCHANGED)
 
@@ -121,9 +145,42 @@ def worker(path, opt):
         resized_size = (opt['resize_size'], opt['resize_size'])
         img = cv2.resize(img, resized_size, interpolation=cv2.INTER_CUBIC)  
 
-    cv2.imwrite(
-        osp.join(opt['save_folder'], f'{img_name}{extension}'), img,
-        [cv2.IMWRITE_PNG_COMPRESSION, opt['compression_level']])
+    h, w = img.shape[0:2]
+    h_space = np.arange(0, h - crop_size + 1, step)
+    if h - (h_space[-1] + crop_size) > thresh_size:
+        h_space = np.append(h_space, h - crop_size)
+    w_space = np.arange(0, w - crop_size + 1, step)
+    if w - (w_space[-1] + crop_size) > thresh_size:
+        w_space = np.append(w_space, w - crop_size)
+
+    index = 0
+
+    if opt['shift_level'] > 0:
+        shift_expr = int(
+            crop_size * opt['shift_level'] / 200
+        )  # 1% of crop size (0.5% random)
+        x_shift = np.random.randint(-shift_expr, shift_expr)
+        y_shift = np.random.randint(-shift_expr, shift_expr)
+
+    else:
+        x_shift = 0
+        y_shift = 0
+
+    for x in h_space:
+        for y in w_space:
+            index += 1
+
+            if (x + x_shift) > 0 and (x+ x_shift) + crop_size < h:
+                x += x_shift
+            if (y + y_shift) > 0 and (y+ y_shift) + crop_size < w:
+                y += y_shift
+
+            cropped_img = img[x : x + crop_size, y : y + crop_size, ...]
+            cropped_img = np.ascontiguousarray(cropped_img)
+
+            cv2.imwrite(
+                osp.join(opt['save_folder'], f'{img_name}_s{index:03d}{extension}'), cropped_img,
+                [cv2.IMWRITE_PNG_COMPRESSION, opt['compression_level']])
 
     process_info = f'Processing {img_name} ...'
     return process_info

@@ -1,6 +1,6 @@
 # general settings
-name: RCANx3_scratch_DIV2K_misaligned
-model_type: SRModel
+name: SwinIRx3_scratch_DIV2K_LRE_misaligned_L1
+model_type: LRESRModel
 scale: 3
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
@@ -9,9 +9,11 @@ manual_seed: 0
 datasets:
   train:
     name: DIV2K
-    type: PairedImageDataset
+    type: PairedMetaImageDataset
     dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub_misaligned
     dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X3_sub
+    dataroot_meta_gt: datasets/DIV2K/DIV2K_meta_HR_sub
+    dataroot_meta_lq: datasets/DIV2K/DIV2K_meta_LR_bicubic/X3_sub
     io_backend:
       type: disk
 
@@ -21,8 +23,8 @@ datasets:
 
     # data loader
     use_shuffle: true
-    num_worker_per_gpu: 3
-    batch_size_per_gpu: 128
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 64
     dataset_enlarge_ratio: 10
     prefetch_mode: ~
 
@@ -36,28 +38,33 @@ datasets:
 
 # network structures
 network_g:
-  type: RCAN
-  num_in_ch: 3
-  num_out_ch: 3
-  num_feat: 64
-  num_group: 10
-  num_block: 15
-  squeeze_factor: 16
+  type: SwinIR
   upscale: 3
-  res_scale: 1
-  img_range: 255.
-  rgb_mean: [0.4488, 0.4371, 0.4040]
+  in_chans: 3
+  img_size: 48
+  window_size: 8
+  img_range: 1.
+  depths: [6, 6, 6, 6, 6, 6]
+  embed_dim: 180
+  num_heads: [6, 6, 6, 6, 6, 6]
+  mlp_ratio: 2
+  upsampler: 'pixelshuffle'
+  resi_connection: '1conv'
 
 
 # path
 path:
   pretrain_network_g: ~
-  strict_load_g: true
-  resume_state: ~
+  strict_load_g: False
+  resume_state: ~ # path to the checkpoint e.g) /home/kanghyun/MisalignSR/experiments/RCANx3_scratch_DIV2K_LRE_misaligned/training_states/60000.state
 
 # training settings
 train:
   ema_decay: 0.999
+  weight_vis: True
+  start_meta: 5000 # start meta learning (LRE) after 10000 iterations
+  meta_loss: L1
+
   optim_g:
     type: Adam
     lr: !!float 1e-4
