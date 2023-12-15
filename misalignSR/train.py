@@ -37,6 +37,7 @@ def interactive_train():
 
         # Simulate command-line arguments
         sys.argv = ['train.py', '-opt', option_file]
+        breakpoint()
         train_pipeline(root_path)
     else:
         click.echo("Training cancelled.")

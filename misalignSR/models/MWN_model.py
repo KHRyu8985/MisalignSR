@@ -12,7 +12,8 @@ from misalignSR.models.LRE_model import LRESRModel
 import higher
 import numpy as np
 from misalignSR.losses.basic_loss import GradientLoss
-from torch.func import functional_call, vmap, grad
+# from torch.func import functional_call, vmap, grad
+import functorch
 from misalignSR.losses.basic_loss import GWLoss
 import torchopt
 
@@ -121,70 +122,126 @@ class MWNSRModel(LRESRModel):
             self.meta_gt = data["meta_gt"].to(self.device)
 
     def determine_meta_weight(self, current_iter):
+
+        net_g_initial_params = [p.clone() for p in self.net_g.parameters()]
+        net_v_initial_params = [p.clone() for p in self.net_v.parameters()]
+
         if self.meta_loss_type == 'GW':
             loss_func = GWLoss().to(self.device)
         else:
             loss_func = torch.nn.L1Loss().to(self.device)
 
-        net_state_dict = torchopt.extract_state_dict(self.net_g) # net_g ---> parameter (theta_{t-1})
-        # optim_state_dict = torchopt.extract_state_dict(self.model_optimizer)  # used for recovering
+        fmodel, theta = functorch.make_functional(self.net_g)
+        wmodel, phi = functorch.make_functional(self.net_v)
 
-        # use functorch to devide by params
-
-        theta = dict(self.net_g.named_parameters())
-        phi = dict(self.net_v.named_parameters())
-
-        fmodel = self.net_g
-        wmodel = self.net_v
+        learning_rate = 1e-4
+        model_optimizer = torchopt.sgd(learning_rate)
+        model_opt_state = model_optimizer.init(theta)
 
         def compute_loss(params, sample, target):
             if sample.ndim == 3:
                 sample = sample.unsqueeze(0)  # prepend batch dimension for processing
                 target = target.unsqueeze(0)
-
-            prediction = functional_call(fmodel, params, (sample,))  # prediction
+            prediction = fmodel(params, sample)  # prediction
             loss = loss_func(prediction, target)
             return loss
 
-
         # Now we perform the inner loop
-        for _ in range(1):
-            weight_train_input = torch.cat((self.lq, self.gt), dim=1)
-            meta_weights = functional_call(wmodel, phi, (weight_train_input,))
+        weight_train_input = torch.cat((self.lq, self.gt), dim=1)
+        meta_weights = wmodel(phi, weight_train_input)
 
-            # compute per-sample gradients for training batch
-            per_sample_loss = vmap(compute_loss, in_dims=(None, 0, 0))(theta, self.lq, self.gt)
-            per_sample_grads = vmap(grad(compute_loss), in_dims=(None, 0, 0),)(theta, self.lq, self.gt)
+        # compute per-sample gradients for training batch
+        per_sample_loss = torch.func.vmap(compute_loss, in_dims=(None, 0, 0))(theta, self.lq, self.gt)
+        per_sample_grads = torch.func.vmap(torch.func.grad(
+            compute_loss), in_dims=(None, 0, 0),)(theta, self.lq, self.gt)
 
-            # compute weighted-loss
-            inner_loss = torch.sum(meta_weights * per_sample_loss)
-            breakpoint()
-            print(theta['conv_first.weight'])
-            self.model_optimizer.step(inner_loss)
-            print(theta['conv_first.weight'])
+        inner_loss = torch.sum(per_sample_loss * meta_weights)
+        inner_grad = torch.autograd.grad(inner_loss, theta, create_graph=True)
+
+        updates, opt_state = model_optimizer.update(inner_grad, model_opt_state, inplace=True)
+        theta_t = torchopt.apply_updates(theta, updates, inplace=True)
 
         # Now we perform the outer loop
-        val_loss = compute_loss(theta, self.meta_lq, self.meta_gt)
-        val_grad = torch.autograd.grad(val_loss, theta, create_graph=True)
+        val_loss = compute_loss(theta_t, self.meta_lq, self.meta_gt)
+        val_grad = torch.autograd.grad(val_loss, theta_t, create_graph=True) # J_e(Dv, theta_t)
 
-        # --> theta_{t-1} recover
+        grad_dot_product = sum([torch.sum(tg * vg, dim=tuple(range(1, tg.ndim)))
+                               for (tg, vg) in zip(per_sample_grads, val_grad)])
 
+        alpha = 1e-2
+        with torch.no_grad():
+            R_i = (grad_dot_product + alpha * torch.log(meta_weights + 1e-8) + alpha) * meta_weights
 
+        def compute_gradients_phi(R_i, meta_weights, phi):
+            # First we compute d_phi_gi
 
+            nb = len(meta_weights)
+            eta = 1e-3
 
-        # compute
-        return meta_weights
+            d_phi_gi = []
+
+            for g_i in meta_weights:
+                d_phi_gi.append(torch.autograd.grad(torch.log(g_i), phi, create_graph=True))
+
+            for r_i, _d_phi_gi in zip(R_i, d_phi_gi):
+                for t_d_phi_gi, _phi in zip(_d_phi_gi, phi):
+                    tmp = _phi.data + t_d_phi_gi.data * r_i * eta / nb
+                    _phi.data.copy_(tmp)
+
+            return phi
+
+        #phi_initial_params = [p.clone() for p in phi]
+
+        phi = compute_gradients_phi(R_i, meta_weights, phi)
+
+        '''
+        for initial, updated in zip(phi_initial_params, phi):
+            if not torch.equal(initial, updated):
+                print("Phi Parameter updated")
+                break
+        else:
+            print("Phi: No parameter was updated")
+        '''
+
+        for param, param_phi in zip(self.net_v.parameters(), phi):
+            param.data.copy_(param_phi.data)
+
+        '''
+        for initial, updated in zip(net_g_initial_params, self.net_g.parameters()):
+            if not torch.equal(initial, updated):
+                print("Net G Parameter updated")
+                break
+        else:
+            print("Net G: No parameter was updated")
+
+        for initial, updated in zip(net_v_initial_params, self.net_v.parameters()):
+            if not torch.equal(initial, updated):
+                print("Net V Parameter updated")
+                break
+        else:
+            print("Net V: No parameter was updated")
+        '''
+        return
 
     def optimize_parameters(self, current_iter):
         self.optimizer_g.zero_grad()
         if current_iter > -1:
-            weights = self.determine_meta_weight(current_iter)
+            self.determine_meta_weight(current_iter)
+            weight_train_input = torch.cat((self.lq, self.gt), dim=1)
+            with torch.no_grad():
+                weights = self.net_v(weight_train_input)
+            weights = weights * len(self.lq)
+            #print(weights)
         else:
             weights = 1.0
         self.output = self.net_g(self.lq)
+        if current_iter % 100 == 0:
+            logger = get_root_logger()
+            logger.info(f"Visualize weights at iteration {current_iter}")
+            logger.info(f"weight is Mean: {weights.mean()}, STD: {weights.std()}")
 
         # visualize weight and lq and gt images --> log images to tensorboard
-        if self.weight_vis and current_iter % 1000 == 1:
+        if self.weight_vis and current_iter % 100 == 1:
             logger = get_root_logger()
             logger.info(f"Visualize weights at iteration {current_iter}")
             logger.info(f"weight is Mean: {weights.mean()}, STD: {weights.std()}")
@@ -204,7 +261,7 @@ class MWNSRModel(LRESRModel):
         loss_dict = OrderedDict()
         # pixel loss
         if self.cri_pix:
-            l_pix = self.cri_pix(weights * self.output, weights * self.gt)
+            l_pix = self.cri_pix(weights[:,None,None,None] * self.output, weights[:,None,None,None] * self.gt)
             l_total += l_pix
             loss_dict["l_pix"] = l_pix
         # perceptual loss

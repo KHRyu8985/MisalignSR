@@ -31,11 +31,11 @@ class ResidualBlock(nn.Module):
 class SimpleMWNet(nn.Module):
     def __init__(self):
         super(SimpleMWNet, self).__init__()
-        self.downsample1 = nn.Conv2d(6, 64, kernel_size=3, stride=2, padding=1)
-        self.resblock1 = ResidualBlock(64, 64)
-        self.resblock2 = ResidualBlock(64, 128, stride=2)
-        self.resblock3 = ResidualBlock(128, 256, stride=2)
-        self.fc = nn.Linear(256, 1)
+        self.downsample1 = nn.Conv2d(6, 32, kernel_size=5, stride=2, padding=1)
+        self.resblock1 = ResidualBlock(32, 32)
+        self.resblock2 = ResidualBlock(32, 64, stride=2)
+        self.resblock3 = ResidualBlock(64, 128, stride=2)
+        self.fc = nn.Linear(128, 1)
 
 
     def forward(self, x):
@@ -43,7 +43,7 @@ class SimpleMWNet(nn.Module):
         x = self.resblock1(x)
         x = self.resblock2(x)
         x = self.resblock3(x)
-        x = F.adaptive_avg_pool2d(x, (1, 1))  # Global Average Pooling
+        x = F.adaptive_max_pool2d(x, (1, 1))  # Global Average Pooling
         x = torch.flatten(x, 1)
         x = self.fc(x)
         weights = F.softmax(x, dim=0)
