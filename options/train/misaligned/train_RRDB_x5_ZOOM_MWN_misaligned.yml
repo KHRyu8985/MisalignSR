@@ -11,13 +11,13 @@ datasets:
     name: ZOOM
     type: PairedMetaImageDataset
     dataroot_gt: datasets/ZOOM/train/HR_sub
-    dataroot_lq: datasets/ZOOM/train/LR/4_sub
-    dataroot_meta_gt: datasets/ZOOM/train/HR_4_meta
-    dataroot_meta_lq: datasets/ZOOM/train/LR_4_meta
+    dataroot_lq: datasets/ZOOM/train/LR/x5_sub
+    dataroot_meta_gt: datasets/ZOOM/train/HR_meta/x5
+    dataroot_meta_lq: datasets/ZOOM/train/LR_meta/x5
     io_backend:
       type: disk
 
-    gt_size: 96
+    gt_size: 125
     use_hflip: true
     use_rot: true
 
@@ -44,7 +44,7 @@ network_g:
   num_feat: 64
   num_block: 23
   num_grow_ch: 32
-  scale: 1
+  scale: 5
 
 network_mwn:
   type: SimpleMWNet
@@ -86,7 +86,7 @@ train:
 
   # losses
   pixel_opt:
-    type: L1Loss
+    type: GWLoss
     loss_weight: 1.0
     reduction: mean
 
