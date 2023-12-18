@@ -39,8 +39,11 @@ def interactive_train():
         root_path = osp.abspath(osp.join(__file__, osp.pardir, osp.pardir))
         option_file = osp.join('options', 'train', selected_option)
 
+        if click.confirm("Auto resume?"):
+            sys.argv = ['train.py', '-opt', option_file, '--auto_resume']
+        else:
         # Simulate command-line arguments
-        sys.argv = ['train.py', '-opt', option_file]
+            sys.argv = ['train.py', '-opt', option_file]
         train_pipeline(root_path)
     else:
         click.echo("Training cancelled.")
