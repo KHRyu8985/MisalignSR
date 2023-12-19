@@ -9,7 +9,6 @@ pre-commit # install pre-commit tool
 pyrootutils # root directory finding
 scikit-learn # machine learning
 voila # jupyter notebook to web app
-cpbd
-lpips
-lmdb
-opencv-python
+lpips # lpips loss
+lmdb # lmdb dataset
+opencv-python # opencv
