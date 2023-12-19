@@ -19,11 +19,16 @@ ltt install torch torchvision torchaudio
 pip install torchopt
 ```
 
-## 4. Install mmcv
+## 4. CUPY
+```bash
+conda install -c conda-forge cupy cuda-version=11.8
+```
+
+## 5. Install mmcv
 pip install -U openmim
 mim install mmcv
 
-## 5. local clone basicsr in a separate directory and install:
+## 6. local clone basicsr in a separate directory and install:
 local clone 하는 이유, pip install 시 몇개 함수가 버젼이 안 맞음...
 ``` bash
 git clone https://github.com/XPixelGroup/BasicSR.git
@@ -32,7 +37,7 @@ pip install -r requirements.txt
 python setup.py develop
 ```
 
-## 6. Go to local directory (MisalignSR) and install additional stuff
+## 7. Go to local directory (MisalignSR) and install additional stuff
 requirement.txt 파일안에 설치 파일들 있음.
 ```bash
 pip install -e .
