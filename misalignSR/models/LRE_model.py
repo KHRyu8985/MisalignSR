@@ -116,7 +116,7 @@ class LRESRModel(SRModel):
         if self.weight_vis and current_iter % 5000 == 1 and current_iter > self.start_meta:
             logger = get_root_logger()
             logger.info(f"Visualize weights at iteration {current_iter}")
-            logger.info(f"weight is Mean: {weights.mean()}, STD: {weights.std()}")
+            logger.info(f"weight is Max: {weights.max()}, Min: {weights.min()}, Mean: {weights.mean()}, STD: {weights.std()}")
             logger.info(f"Loss type is {self.meta_loss_type}")
 
             w = tensor2img(weights.detach().cpu())

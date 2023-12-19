@@ -1,6 +1,6 @@
 # general settings
-name: RRDB_MWN_x4_ZOOM_scratch
-model_type: MWNSRModel
+name: NINASR_BASE_x4_ZOOM
+model_type: SRModel
 scale: 1
 num_gpu: 1  # set num_gpu: 0 for cpu mode
 manual_seed: 0
@@ -9,22 +9,20 @@ manual_seed: 0
 datasets:
   train:
     name: ZOOM
-    type: PairedMetaImageDataset
+    type: PairedImageDataset
     dataroot_gt: datasets/ZOOM/train/HR_sub
     dataroot_lq: datasets/ZOOM/train/LR/4_sub
-    dataroot_meta_gt: datasets/ZOOM/train/HR_4_meta
-    dataroot_meta_lq: datasets/ZOOM/train/LR_4_meta
     io_backend:
       type: disk
 
-    gt_size: 80
+    gt_size: 96
     use_hflip: true
     use_rot: true
 
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 3
-    batch_size_per_gpu: 12
+    batch_size_per_gpu: 16
     dataset_enlarge_ratio: 10
     prefetch_mode: ~
 
@@ -38,16 +36,13 @@ datasets:
 
 # network structures
 network_g:
-  type: RRDBNet
+  type: NinaSR
   num_in_ch: 3
   num_out_ch: 3
-  num_feat: 48
-  num_block: 23
-  num_grow_ch: 32
-  scale: 1
-
-network_mwn:
-  type: SimpleMWNet
+  num_feat: 16
+  num_block: 10
+  upscale: 1
+  expansion: 2.0
 
 # path
 path:
@@ -58,23 +53,12 @@ path:
 # training settings
 train:
   ema_decay: 0.999
-  weight_vis: False
-  start_meta: 5000 # start meta learning (LRE) after 20000 iterations
-  meta_loss: GW
-  lre_batch_only: True
 
   optim_g:
     type: Adam
     lr: !!float 1e-4
     weight_decay: 0
     betas: [0.9, 0.99]
-
-  optim_meta_g:
-    type: Adam
-    lr: !!float 1e-4
-    weight_decay: 0
-    betas: [0.9, 0.99]
-
 
   scheduler:
     type: MultiStepLR
@@ -108,6 +92,7 @@ val:
     niqe: # metric name, can be arbitrary
         type: calculate_niqe
         crop_border: 4
+
     lpips:
         type: calculate_lpips
         crop_border: 4

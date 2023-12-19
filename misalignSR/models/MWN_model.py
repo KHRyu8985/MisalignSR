@@ -61,8 +61,6 @@ class MWNSRModel(LRESRModel):
 
         # optimizer for meta-weight-net
         lr = self.opt['train']['optim_g'].get("lr", 1e-4)
-        self.g_model_optimizer = torchopt.MetaSGD(self.net_g, lr=lr)  # use it for MWN
-        self.v_model_optimizer = torchopt.MetaSGD(self.net_v, lr=lr)  # use it for MWN
 
         # load pretrained models
         load_path = self.opt["path"].get("pretrain_network_v", None)
@@ -105,12 +103,6 @@ class MWNSRModel(LRESRModel):
             optim_type, self.net_g.parameters(), **train_opt["optim_g"]
         )
         self.optimizers.append(self.optimizer_g)
-        # optimizer d
-        optim_type = train_opt["optim_meta_g"].pop("type")
-        self.optimizer_meta_g = self.get_optimizer(
-            optim_type, self.net_v.parameters(), **train_opt["optim_meta_g"]
-        )
-        self.optimizers.append(self.optimizer_meta_g)
 
     def feed_data(self, data):
         self.lq = data["lq"].to(self.device)
@@ -123,8 +115,8 @@ class MWNSRModel(LRESRModel):
 
     def determine_meta_weight(self, current_iter):
 
-        net_g_initial_params = [p.clone() for p in self.net_g.parameters()]
-        net_v_initial_params = [p.clone() for p in self.net_v.parameters()]
+        #net_g_initial_params = [p.clone() for p in self.net_g.parameters()]
+        #net_v_initial_params = [p.clone() for p in self.net_v.parameters()]
 
         if self.meta_loss_type == 'GW':
             loss_func = GWLoss().to(self.device)
@@ -225,37 +217,23 @@ class MWNSRModel(LRESRModel):
 
     def optimize_parameters(self, current_iter):
         self.optimizer_g.zero_grad()
-        if current_iter > -1:
+
+        if current_iter > self.start_meta:
             self.determine_meta_weight(current_iter)
             weight_train_input = torch.cat((self.lq, self.gt), dim=1)
+
             with torch.no_grad():
                 weights = self.net_v(weight_train_input)
             weights = weights * len(self.lq)
-            #print(weights)
         else:
-            weights = 1.0
+            weights = torch.ones(len(self.lq)).to(self.device)
         self.output = self.net_g(self.lq)
+
         if current_iter % 100 == 0:
             logger = get_root_logger()
-            logger.info(f"Visualize weights at iteration {current_iter}")
-            logger.info(f"weight is Mean: {weights.mean()}, STD: {weights.std()}")
-
-        # visualize weight and lq and gt images --> log images to tensorboard
-        if self.weight_vis and current_iter % 100 == 1:
-            logger = get_root_logger()
-            logger.info(f"Visualize weights at iteration {current_iter}")
-            logger.info(f"weight is Mean: {weights.mean()}, STD: {weights.std()}")
-
-            w = tensor2img(weights.detach().cpu())
-            o = tensor2img(self.output.detach().cpu())
-            g = tensor2img(self.gt.detach().cpu())
-            i = np.concatenate((o, w, g), axis=1)
-
-            save_img_path = osp.join(
-                self.opt["path"]["visualization"], "weights", f"{current_iter}.png"
-            )
-
-            imwrite(i, save_img_path)
+            logger.info(f"Information of weight at iteration {current_iter}")
+            logger.info(f"weight is Max: {weights.max()}, Min: {weights.min()}, Mean: {weights.mean()}, STD: {weights.std()}")
+            logger.info(f"Loss type is {self.meta_loss_type}")
 
         l_total = 0
         loss_dict = OrderedDict()
