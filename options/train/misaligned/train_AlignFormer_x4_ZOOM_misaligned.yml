@@ -1,0 +1,124 @@
+# general settings
+name: AlignFormer_x4_zoom
+folder_suffix: AlignFormer
+model_type: TTSRModel
+scale: 4
+num_gpu: 1
+manual_seed: 10
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: ZOOM
+    type: TripleImageDataset
+    dataroot_gt: datasets/ZOOM/train/HR_sub
+    dataroot_ref: datasets/ZOOM/train/HR_sub
+    dataroot_lq: datasets/ZOOM/train/LR/x4_sub
+    meta_info_file: ~
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 240
+    use_flip: true
+    use_rot: true
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 2
+    dataset_enlarge_ratio: 10
+    prefetch_mode: ~
+
+  val:
+    name: ZOOM
+    type: TripleImageDataset
+    dataroot_gt: datasets/ZOOM/train/HR_sub
+    dataroot_ref: datasets/ZOOM/train/HR_sub
+    dataroot_lq: datasets/ZOOM/train/LR/x4_sub
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+# network structures
+network_g:
+  type: AlignFormer
+  feat_dim: 64
+  nhead: 4
+  mlp_ratio: 2
+  pos_en_flag: false
+  k_size: 5
+  attn_type: softmax
+  flow_type: raft
+  flow_model_path: weights/RAFT/raft-things.pth
+  flow_ft: false
+  # DA module
+  dam_flag: true
+  dam_ft: false
+  dam_feat: 64
+  dam_demodulate: true
+  dam_path: experiments/DAM_x4_ZOOM/models/net_g_20000.pth
+  # main branch
+  main_ft: true
+
+
+# path
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+# training settings
+train:
+  ema_decay: 0
+  optim_g:
+    type: Adam
+    lr: !!float 2e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [250000, 300000]
+    gamma: 0.5
+
+  total_iter: 50001
+  warmup_iter: -1  # no warm up
+
+  # losses
+  pixel_opt:
+    type: ContextualLoss
+    band_width: !!float 0.5
+    vgg_layer: conv4_4
+    loss_type: cosine
+    loss_weight: !!float 1.0
+    reduction: mean
+
+# validation settings
+val:
+  val_freq: 50000
+  save_img: true
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+
+    ssim: # metric name, can be arbitrary
+        type: calculate_ssim
+        crop_border: 4
+        test_y_channel: false
+# logging settings
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1e5
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29165
